@@ -1,6 +1,7 @@
-export const automationProvider = {
-	polymarket: "POLYMARKET",
-} as const;
+import type {
+	ProviderApiId,
+	SupportedChain,
+} from "@/packages/providers/provider-config.ts";
 
 export const automationStepKind = {
 	action: "ACTION",
@@ -46,8 +47,7 @@ export const automationStatus = {
 	paused: "paused",
 } as const;
 
-export type AutomationProvider =
-	(typeof automationProvider)[keyof typeof automationProvider];
+export type AutomationProvider = ProviderApiId;
 
 export type AutomationStepKind =
 	(typeof automationStepKind)[keyof typeof automationStepKind];
@@ -99,7 +99,7 @@ export type WorkflowPayload = {
 
 export type PublishAutomationRequest = {
 	market: AutomationMarketPayload;
-	provider?: AutomationProvider;
+	provider: AutomationProvider;
 	title: string;
 	workflow: WorkflowPayload;
 };
@@ -119,6 +119,9 @@ export type Automation = {
 	last_run_status: string | null;
 	market_id: string | null;
 	market_title: string | null;
+	provider: AutomationProvider;
+	chain: SupportedChain;
+	chain_id: number;
 	status: AutomationStatus | string;
 	title: string;
 	updated_at: string;

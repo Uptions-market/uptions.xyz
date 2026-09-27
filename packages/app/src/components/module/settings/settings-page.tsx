@@ -26,10 +26,14 @@ import {
 } from "@/hooks/use-auth.ts";
 import { cn } from "@/lib/utils.ts";
 import {
-	type AuthUser,
-	supportedChain,
-	type TradingProviderOption,
-	tradingProvider,
+	getProviderConfig,
+	type ProviderConfig,
+	resolveSelectedProvider,
+} from "@/packages/providers/provider-config.ts";
+import type {
+	AuthUser,
+	TradingProviderOption,
+	VenueConnection,
 } from "@/packages/types/auth.types.ts";
 import { getRequestErrorMessage } from "@/util/errors.ts";
 
@@ -78,6 +82,9 @@ export function SettingsPage() {
 	const { user } = useCurrentUser();
 	const [activeSection, setActiveSection] = useState<SettingsSectionId>(
 		settingsSection.profile,
+	);
+	const selectedProvider = resolveSelectedProvider(
+		user?.preferred_trading_provider,
 	);
 
 	useEffect(() => {
@@ -154,6 +161,11 @@ export function SettingsPage() {
 									selectedProvider={user?.preferred_trading_provider ?? null}
 								/>
 								<WalletSettings
+									connection={user?.venue_connections.find(
+										(connection) =>
+											connection.venue === selectedProvider.venue.id,
+									)}
+									provider={selectedProvider}
 									savedWallet={user?.primary_wallet_address ?? null}
 								/>
 							</div>
@@ -222,7 +234,11 @@ function ProfileSettings({ user }: { user: AuthUser | null | undefined }) {
 					/>
 					<ProfileValue
 						label="Trading provider"
-						value={formatProvider(user?.preferred_trading_provider)}
+						value={
+							user?.preferred_trading_provider
+								? getProviderConfig(user.preferred_trading_provider).label
+								: "Not selected"
+						}
 					/>
 				</div>
 				<form
@@ -346,7 +362,11 @@ function TradingProviderSettings({
 	const updateProvider = useUpdateTradingProvider();
 
 	const handleSelect = async (provider: TradingProviderOption) => {
-		if (!provider.available || provider.provider === selectedProvider) {
+		if (
+			!provider.available ||
+			!getProviderConfig(provider.provider).capabilities.marketData ||
+			provider.provider === selectedProvider
+		) {
 			return;
 		}
 
@@ -373,6 +393,9 @@ function TradingProviderSettings({
 			) : (
 				<div className="grid gap-3">
 					{providers.map((provider) => {
+						const config = getProviderConfig(provider.provider);
+						const available =
+							provider.available && config.capabilities.marketData;
 						const selected = provider.provider === selectedProvider;
 
 						return (
@@ -382,9 +405,9 @@ function TradingProviderSettings({
 									selected
 										? "border-primary"
 										: "border-app-border hover:border-primary/60",
-									!provider.available && "cursor-not-allowed opacity-60",
+									!available && "cursor-not-allowed opacity-60",
 								)}
-								disabled={!provider.available || updateProvider.isPending}
+								disabled={!available || updateProvider.isPending}
 								key={provider.provider}
 								onClick={() => handleSelect(provider)}
 								type="button"
@@ -415,7 +438,15 @@ function TradingProviderSettings({
 	);
 }
 
-function WalletSettings({ savedWallet }: { savedWallet: string | null }) {
+function WalletSettings({
+	connection,
+	provider,
+	savedWallet,
+}: {
+	connection: VenueConnection | undefined;
+	provider: ProviderConfig;
+	savedWallet: string | null;
+}) {
 	const { address, chainId, isConnected } = useAccount();
 	const updateWallet = useUpdateWallet();
 	const connectedWalletSaved =
@@ -427,16 +458,16 @@ function WalletSettings({ savedWallet }: { savedWallet: string | null }) {
 			return;
 		}
 
-		if (chainId !== 137) {
-			toast.error("Switch your wallet to Polygon");
+		if (chainId !== provider.requiredChain.id) {
+			toast.error(`Switch your wallet to ${provider.requiredChain.label}`);
 			return;
 		}
 
 		try {
 			await updateWallet.mutateAsync({
-				chain: supportedChain.polygon,
-				chain_id: 137,
-				provider: tradingProvider.polymarket,
+				chain: provider.requiredChain.apiId,
+				chain_id: provider.requiredChain.id,
+				provider: provider.apiId,
 				wallet_address: address,
 			});
 			toast.success(
@@ -449,12 +480,12 @@ function WalletSettings({ savedWallet }: { savedWallet: string | null }) {
 
 	return (
 		<SettingsSection
-			description="Your wallet signs Polymarket orders. Uptions never stores your private key."
+			description={`Your wallet signs ${provider.label} orders. Uptions never stores your private key.`}
 			icon={Wallet}
 			title="Trading wallet"
 		>
 			<div className="grid gap-4">
-				<div className="grid gap-3 border border-app-border bg-app-muted p-4 md:grid-cols-3">
+				<div className="grid gap-3 border border-app-border bg-app-muted p-4 sm:grid-cols-2 xl:grid-cols-4">
 					<StatusValue
 						label="Connection"
 						value={isConnected ? "Connected" : "Not connected"}
@@ -462,20 +493,32 @@ function WalletSettings({ savedWallet }: { savedWallet: string | null }) {
 					<StatusValue
 						label="Network"
 						value={
-							chainId === 137
-								? "Polygon"
+							chainId === provider.requiredChain.id
+								? provider.requiredChain.label
 								: chainId
 									? `Chain ${chainId}`
 									: "Not available"
 						}
 					/>
 					<StatusValue label="Saved wallet" value={shortAddress(savedWallet)} />
+					<StatusValue
+						label={`${provider.label} wallet`}
+						value={shortAddress(connection?.account_identifier)}
+					/>
 				</div>
+				{connection && connection.status !== "active" ? (
+					<p className="border border-warning/40 bg-warning/10 p-4 text-sm leading-6 text-app-muted-fg">
+						This provider connection needs attention. To restore a wallet
+						mismatch, connect the {provider.label} wallet shown above and save
+						it as your trading wallet. Other connection issues can be refreshed
+						when you next authorize {provider.label} from a market.
+					</p>
+				) : null}
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<p className="text-xs text-app-muted-fg">
 						{address
 							? `Active wallet ${shortAddress(address)}`
-							: "Connect the Polygon wallet you want to use."}
+							: `Connect the ${provider.requiredChain.label} wallet you want to use.`}
 					</p>
 					<WalletConnectButton syncWallet={false} />
 				</div>
@@ -488,7 +531,7 @@ function WalletSettings({ savedWallet }: { savedWallet: string | null }) {
 						disabled={
 							!address ||
 							!isConnected ||
-							chainId !== 137 ||
+							chainId !== provider.requiredChain.id ||
 							connectedWalletSaved ||
 							updateWallet.isPending
 						}
@@ -691,12 +734,6 @@ function parseSettingsSection(hash: string): SettingsSectionId {
 	return Object.values(settingsSection).includes(value as SettingsSectionId)
 		? (value as SettingsSectionId)
 		: settingsSection.profile;
-}
-
-function formatProvider(provider: string | null | undefined) {
-	return provider
-		? provider.split("_").join(" ").toLowerCase()
-		: "Not selected";
 }
 
 function shortAddress(address: string | null | undefined) {

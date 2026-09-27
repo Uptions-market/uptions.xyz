@@ -47,11 +47,13 @@ export type TradeStatus =
 export type CreateTradeIntentRequest = {
 	amount: number;
 	automation_id?: string;
+	defer_exec?: boolean;
 	execution_type: PolymarketExecutionType;
 	market_id: string;
 	market_title: string;
 	order_type: TradeOrderType;
 	outcome: string;
+	post_only?: boolean;
 	price?: number | null;
 	provider: TradingProvider;
 	side: TradeSide;
@@ -72,6 +74,7 @@ export type TradeIntent = {
 	chain: SupportedChain;
 	chain_id: number;
 	created_at: string;
+	defer_exec: boolean;
 	error: string | null;
 	execution_type: PolymarketExecutionType;
 	id: string;
@@ -79,17 +82,21 @@ export type TradeIntent = {
 	market_title: string;
 	order_type: TradeOrderType;
 	outcome: string;
+	post_only: boolean;
 	price: number | null;
 	provider: TradingProvider;
 	provider_order_id: string | null;
 	provider_response: Record<string, unknown> | null;
-	signed_maker_amount_base?: string | null;
-	signed_taker_amount_base?: string | null;
-	normalized_amount_base?: string | null;
-	normalized_price_numerator?: string | null;
-	normalized_price_denominator?: string | null;
-	cancellation_requested_at?: string | null;
-	cancelled_at?: string | null;
+	reconciliation_checked_at: string | null;
+	signed_order_hash: string | null;
+	signed_maker_amount_base: string | null;
+	signed_taker_amount_base: string | null;
+	normalized_amount_base: string | null;
+	normalized_price_numerator: string | null;
+	normalized_price_denominator: string | null;
+	submission_started_at: string | null;
+	cancellation_requested_at: string | null;
+	cancelled_at: string | null;
 	side: TradeSide;
 	status: TradeStatus | string;
 	submitted_at: string | null;
@@ -101,6 +108,12 @@ export type TradeIntent = {
 export type CreateTradeIntentResponse = {
 	token_metadata: PolymarketTokenMetadata;
 	trade: TradeIntent;
+};
+
+export type CancelMarketTradesRequest = {
+	market_id: string;
+	provider: TradingProvider;
+	token_id: string;
 };
 
 export type SubmitSignedTradeRequest = {
@@ -115,6 +128,13 @@ export type SubmitSignedTradeResponse = {
 	trade: TradeIntent;
 };
 
-export type TradeActionResponse = {
+export type ReconcileTradeResponse = {
+	provider_lookup_available: boolean;
+	resolution: string;
 	trade: TradeIntent;
+};
+
+export type CancelTradesResponse = {
+	provider_response: Record<string, unknown>;
+	trades: TradeIntent[];
 };

@@ -2,18 +2,21 @@ import { Heart, LoaderCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { useMarketFavorite } from "@/hooks/use-market-favorite.ts";
 import { cn } from "@/lib/utils.ts";
+import type { ProviderConfig } from "@/packages/providers/provider-config.ts";
 
 type MarketFavoriteButtonProps = {
 	className?: string;
 	marketId: string;
+	provider: ProviderConfig;
 };
 
 export function MarketFavoriteButton({
 	className,
 	marketId,
+	provider,
 }: MarketFavoriteButtonProps) {
 	const { error, favorited, isLoading, isUpdating, retry, toggle } =
-		useMarketFavorite(marketId);
+		useMarketFavorite(provider, marketId);
 	const isBusy = isLoading || isUpdating;
 
 	return (

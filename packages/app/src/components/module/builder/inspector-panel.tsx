@@ -15,7 +15,7 @@ import {
 	workflowOutcome,
 } from "@/packages/types/automation.types.ts";
 import type { VenueId } from "@/packages/venues/venue-data.ts";
-import { getVenueConfig, venues } from "@/packages/venues/venue-data.ts";
+import { getVenueConfig } from "@/packages/venues/venue-data.ts";
 
 type InspectorPanelProps = {
 	market?: Market | null;
@@ -30,7 +30,7 @@ export function InspectorPanel({
 	selectedBlock,
 	venue,
 }: InspectorPanelProps) {
-	const activeVenue = getVenueConfig(selectedBlock?.venue ?? venue);
+	const activeVenue = getVenueConfig(venue);
 	const updateParams = (updates: Record<string, WorkflowParamValue>) => {
 		if (!selectedBlock) {
 			return;
@@ -83,28 +83,13 @@ export function InspectorPanel({
 								value={selectedBlock.description}
 							/>
 						</div>
-						<div className="mt-6">
-							<label className="grid gap-2">
-								<span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted-fg)]">
-									{AppKeyword.Market}
-								</span>
-								<select
-									className="h-12 border border-[var(--app-border)] bg-[var(--app-bg)] px-3 text-sm text-[var(--app-fg)] outline-none focus:border-primary"
-									name={BuilderFieldName.Venue}
-									onChange={(event) =>
-										onUpdateBlock({
-											venue: event.target.value as VenueId,
-										})
-									}
-									value={activeVenue.id}
-								>
-									{venues.map((item) => (
-										<option key={item.id} value={item.id}>
-											{item.label}
-										</option>
-									))}
-								</select>
-							</label>
+						<div className="mt-6 grid gap-2">
+							<span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted-fg)]">
+								{AppKeyword.Market}
+							</span>
+							<div className="h-12 border border-[var(--app-border)] bg-[var(--app-bg)] px-3 py-3 text-sm text-[var(--app-fg)]">
+								{activeVenue.label}
+							</div>
 						</div>
 						<WorkflowParamFields
 							block={selectedBlock}

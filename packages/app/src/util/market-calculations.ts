@@ -1,14 +1,16 @@
-import type { PolymarketMarket } from "@/packages/types/market.types.ts";
+import type { Market } from "@/packages/types/market.types.ts";
 import { getFiniteNumber } from "./numbers.ts";
 
-export function getNoPrice(market: PolymarketMarket) {
-	const lastTradePrice = getFiniteNumber(market.lastTradePrice);
+type MarketPrices = Pick<Market, "bestAsk" | "bestBid" | "lastTradePrice">;
+
+export function getNoPrice(market: MarketPrices) {
+	const lastTradePrice = getFiniteNumber(market.lastTradePrice ?? undefined);
 
 	if (lastTradePrice !== null) {
 		return 1 - lastTradePrice;
 	}
 
-	const bestAsk = getFiniteNumber(market.bestAsk);
+	const bestAsk = getFiniteNumber(market.bestAsk ?? undefined);
 
 	if (bestAsk !== null) {
 		return 1 - bestAsk;
@@ -18,12 +20,12 @@ export function getNoPrice(market: PolymarketMarket) {
 }
 
 export function getLeadingOutcome(
-	market: PolymarketMarket,
+	market: MarketPrices,
 	outcomeOne: string,
 	outcomeTwo: string,
 ) {
 	const yesPrice =
-		getFiniteNumber(market.bestBid ?? market.lastTradePrice) ?? 0;
+		getFiniteNumber(market.bestBid ?? market.lastTradePrice ?? undefined) ?? 0;
 	const noPrice = getFiniteNumber(getNoPrice(market)) ?? 0;
 
 	return yesPrice >= noPrice

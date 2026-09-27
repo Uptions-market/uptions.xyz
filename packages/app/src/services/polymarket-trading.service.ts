@@ -9,6 +9,7 @@ import {
 	type TickSize,
 } from "@polymarket/clob-client";
 import type { WalletClient } from "viem";
+import { isTestnetTrading } from "@/config/trading-environment.ts";
 import type {
 	PolymarketExecutionType,
 	TradeOrderType,
@@ -52,7 +53,7 @@ export function createPolymarketClient(
 
 	return new ClobClient(
 		polymarketClobHost,
-		Chain.POLYGON,
+		isTestnetTrading ? Chain.AMOY : Chain.POLYGON,
 		walletClient,
 		creds,
 		SignatureType.EOA,

@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button.tsx";
 import { providerAssets } from "@/components/wallet/provider-assets.ts";
 import {
 	erc20TradingAbi,
-	POLYGON_CHAIN_ID,
 	POLYGON_USDC_E_DECIMALS,
 	POLYMARKET_CONTRACTS,
 } from "@/constant/polymarket-contracts.ts";
 import { useCurrentUser } from "@/hooks/use-auth.ts";
 import { useAutomations } from "@/hooks/use-automations.ts";
+import { resolveSelectedProvider } from "@/packages/providers/provider-config.ts";
 import { automationStatus } from "@/packages/types/automation.types.ts";
 import { formatDate } from "@/util/formatters.ts";
 
@@ -20,16 +20,19 @@ export default function UserPortfolioOverview() {
 	const { user } = useCurrentUser();
 	const { automations, isLoading: automationsLoading } = useAutomations();
 	const { address, isConnected } = useAccount();
+	const providerConfig = resolveSelectedProvider(
+		user?.preferred_trading_provider,
+	);
 	const { data: polBalance, isLoading: polBalanceLoading } = useBalance({
 		address,
-		chainId: POLYGON_CHAIN_ID,
+		chainId: providerConfig.requiredChain.id,
 		query: { enabled: Boolean(address && isConnected) },
 	});
 	const { data: usdcBalance, isLoading: usdcBalanceLoading } = useReadContract({
 		abi: erc20TradingAbi,
 		address: POLYMARKET_CONTRACTS.usdcE,
 		args: address ? [address] : undefined,
-		chainId: POLYGON_CHAIN_ID,
+		chainId: providerConfig.requiredChain.id,
 		functionName: "balanceOf",
 		query: { enabled: Boolean(address && isConnected) },
 	});
@@ -124,7 +127,7 @@ export default function UserPortfolioOverview() {
 						</div>
 						<div className="min-w-0">
 							<p className="text-xs font-bold uppercase tracking-[0.1em] text-app-muted-fg">
-								Polygon wallet
+								{providerConfig.requiredChain.label} wallet
 							</p>
 							<p className="mt-2 text-sm font-semibold text-app-fg">
 								{formatUsdcBalance(usdcBalance, usdcBalanceLoading)}
@@ -160,9 +163,11 @@ export default function UserPortfolioOverview() {
 								Trading provider
 							</p>
 							<p className="mt-2 text-sm font-semibold capitalize text-app-fg">
-								{provider ? formatProvider(provider) : "Not selected"}
+								{provider ? providerConfig.label : "Not selected"}
 							</p>
-							<p className="mt-1 text-xs text-app-muted-fg">Polygon network</p>
+							<p className="mt-1 text-xs text-app-muted-fg">
+								{providerConfig.requiredChain.label} network
+							</p>
 						</div>
 					</div>
 				</div>
@@ -207,10 +212,6 @@ function formatPolBalance(
 	}
 
 	return `${Number(formatUnits(balance.value, balance.decimals)).toLocaleString(undefined, { maximumFractionDigits: 5 })} POL gas`;
-}
-
-function formatProvider(provider: string) {
-	return provider.split("_").join(" ").toLowerCase();
 }
 
 function shortAddress(address: string | null | undefined) {

@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import Avatar from "boring-avatars";
 import { ChevronDown, LogOut, Menu, Settings, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -32,10 +32,15 @@ import {
 	dashboardNavigationItems,
 } from "@/packages/navigation/dashboard-navigation";
 import type { AutomationAlert } from "@/packages/types/automation.types.ts";
+import type { ProviderConfig } from "@/packages/providers/provider-config.ts";
 import { formatDate } from "@/util/formatters.ts";
 import Logo from "../misc/logo";
 
-export default function DashboardHeader() {
+export default function DashboardHeader({
+	walletProvider,
+}: {
+	walletProvider?: ProviderConfig;
+}) {
 	const NotificationsIcon = dashboardActions.notificationsIcon;
 	const { user } = useCurrentUser();
 	const logout = useLogout();
@@ -100,14 +105,14 @@ export default function DashboardHeader() {
 						const Icon = item.icon;
 
 						return (
-							<a
+							<Link
 								className="inline-flex items-center gap-2 text-xs font-medium text-[var(--app-muted-fg)] no-underline transition hover:text-[var(--app-fg)]"
-								href={item.href}
 								key={item.label}
+								to={item.href}
 							>
 								<Icon className="size-3.5" />
 								{item.label}
-							</a>
+							</Link>
 						);
 					})}
 				</nav>
@@ -146,15 +151,15 @@ export default function DashboardHeader() {
 									const Icon = item.icon;
 
 									return (
-										<a
+										<Link
 											className="flex min-h-11 items-center gap-3 px-3 text-sm font-semibold text-app-muted-fg no-underline transition hover:bg-app-muted hover:text-app-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-											href={item.href}
 											key={item.label}
 											onClick={() => setMobileNavigationOpen(false)}
+											to={item.href}
 										>
 											<Icon className="size-4" />
 											{item.label}
-										</a>
+										</Link>
 									);
 								})}
 							</nav>
@@ -335,7 +340,9 @@ export default function DashboardHeader() {
 							</div>
 						) : null}
 					</CustomModal>
-					{user?.preferred_trading_provider ? <WalletConnectButton /> : null}
+					{user?.preferred_trading_provider ? (
+						<WalletConnectButton provider={walletProvider} />
+					) : null}
 					{user ? (
 						<details className="group relative">
 							<summary className="flex h-9 max-w-[260px] cursor-pointer list-none items-center gap-2 px-3 text-xs font-semibold text-app-muted-fg transition hover:bg-app-muted hover:text-app-fg [&::-webkit-details-marker]:hidden">
@@ -343,20 +350,20 @@ export default function DashboardHeader() {
 								<ChevronDown className="size-3.5 shrink-0 transition group-open:rotate-180" />
 							</summary>
 							<div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-52 border border-app-border bg-app-card p-1.5 shadow-xl">
-								<a
+								<Link
 									className="flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-app-muted-fg no-underline transition hover:bg-app-muted hover:text-app-fg"
-									href="/dashboard"
+									to="/dashboard"
 								>
 									<UserRound className="size-4" />
 									Profile
-								</a>
-								<a
+								</Link>
+								<Link
 									className="flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-app-muted-fg no-underline transition hover:bg-app-muted hover:text-app-fg"
-									href="/settings"
+									to="/settings"
 								>
 									<Settings className="size-4" />
 									Settings
-								</a>
+								</Link>
 								<ThemeToggle presentation="menu" />
 								<div className="my-1 border-t border-app-border" />
 								<CustomModal

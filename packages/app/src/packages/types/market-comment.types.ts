@@ -1,3 +1,5 @@
+import type { ProviderApiId } from "@/packages/providers/provider-config.ts";
+
 export const MARKET_COMMENT_MAX_LENGTH = 2000;
 
 export type MarketCommentAuthor = {
@@ -7,6 +9,7 @@ export type MarketCommentAuthor = {
 
 export type MarketComment = {
 	id: string;
+	provider: ProviderApiId;
 	market_id: string;
 	author: MarketCommentAuthor;
 	body: string;

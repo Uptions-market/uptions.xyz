@@ -7,6 +7,7 @@ import {
 	workflowBlockKind,
 	workflowBlocks,
 } from "@/packages/builder/builder-data.ts";
+import { providerApiIds } from "@/packages/providers/provider-config.ts";
 import type {
 	AutomationProvider,
 	AutomationStepKind,
@@ -15,7 +16,6 @@ import type {
 	WorkflowStepParams,
 } from "@/packages/types/automation.types.ts";
 import {
-	automationProvider,
 	automationStepKind,
 	workflowActionType,
 	workflowMessageChannel,
@@ -218,7 +218,7 @@ export function serializeWorkflowBlock(block: WorkflowBlock) {
 
 export function validateWorkflowForPublish(
 	state: WorkflowState,
-	provider: AutomationProvider = automationProvider.polymarket,
+	provider: AutomationProvider = providerApiIds.polymarket,
 ) {
 	const graphError = validateWorkflowGraph(state);
 
@@ -226,7 +226,7 @@ export function validateWorkflowForPublish(
 		return graphError;
 	}
 
-	if (provider !== automationProvider.polymarket) {
+	if (provider !== providerApiIds.polymarket) {
 		return "This automation includes a provider that is not supported yet.";
 	}
 

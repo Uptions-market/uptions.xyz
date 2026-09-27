@@ -1,6 +1,6 @@
 import type {
-	PolymarketOrderBook,
-	PolymarketOrderBookLevel,
+	MarketOrderBook,
+	MarketOrderBookLevel,
 } from "@/packages/types/market.types.ts";
 
 const marketSocketUrl = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
@@ -246,10 +246,10 @@ export class PolymarketOrderBookStreamService {
 }
 
 export function applyPolymarketOrderBookEvent(
-	current: PolymarketOrderBook | null | undefined,
+	current: MarketOrderBook | null | undefined,
 	event: PolymarketMarketEvent,
 	assetId: string,
-): PolymarketOrderBook | null {
+): MarketOrderBook | null {
 	if (!eventTargetsAsset(event, assetId)) {
 		return current ?? null;
 	}
@@ -342,8 +342,8 @@ export function applyPolymarketOrderBookEvent(
 }
 
 export function normalizePolymarketOrderBook(
-	orderBook: PolymarketOrderBook,
-): PolymarketOrderBook {
+	orderBook: MarketOrderBook,
+): MarketOrderBook {
 	const bids = normalizeLevels(orderBook.bids, "descending");
 	const asks = normalizeLevels(orderBook.asks, "ascending");
 	return createOrderBook(
@@ -471,14 +471,14 @@ function isPolymarketMarketEvent(
 }
 
 function createOrderBook(
-	current: PolymarketOrderBook | null | undefined,
+	current: MarketOrderBook | null | undefined,
 	assetId: string,
-	bids: PolymarketOrderBookLevel[],
-	asks: PolymarketOrderBookLevel[],
+	bids: MarketOrderBookLevel[],
+	asks: MarketOrderBookLevel[],
 	updatedAt: string,
 	providedBestBid?: number,
 	providedBestAsk?: number,
-): PolymarketOrderBook {
+): MarketOrderBook {
 	const bestBid = providedBestBid ?? bids[0]?.price ?? null;
 	const bestAsk = providedBestAsk ?? asks[0]?.price ?? null;
 	return {
@@ -494,7 +494,7 @@ function createOrderBook(
 }
 
 function updateLevel(
-	levels: PolymarketOrderBookLevel[],
+	levels: MarketOrderBookLevel[],
 	price: number,
 	size: number,
 	direction: "ascending" | "descending",
@@ -513,7 +513,7 @@ function updateLevel(
 function normalizeLevels(
 	levels: unknown,
 	direction: "ascending" | "descending",
-): PolymarketOrderBookLevel[] {
+): MarketOrderBookLevel[] {
 	if (!Array.isArray(levels)) {
 		return [];
 	}

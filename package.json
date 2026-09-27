@@ -17,12 +17,14 @@
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",
     "boring-avatars": "^2.0.4",
+    "effect": "^3.22.0",
     "husky": "^9.1.7",
     "viem": "2.x",
     "wagmi": "^3.7.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.1",
-    "@commitlint/config-conventional": "^21.0.1"
+    "@commitlint/config-conventional": "^21.0.1",
+    "@effect/language-service": "^0.87.0"
   }
 }

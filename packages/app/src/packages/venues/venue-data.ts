@@ -1,26 +1,29 @@
-import { AppKeyword } from "@/common";
+import {
+	defaultProvider,
+	type ProviderRouteId,
+	providerCatalog,
+} from "@/packages/providers/provider-config.ts";
 
 export const venueIds = {
-	polymarket: "polymarket",
-} as const;
+	dflow: "dflow",
+	polymarket: defaultProvider.venue.id,
+} as const satisfies Record<string, ProviderRouteId>;
 
-export type VenueId = (typeof venueIds)[keyof typeof venueIds];
+export type VenueId = ProviderRouteId;
 
 export type VenueConfig = {
+	description: string;
 	id: VenueId;
 	label: string;
-	description: string;
 };
 
-export const venues = [
-	{
-		id: venueIds.polymarket,
-		label: AppKeyword.Polymarket,
-		description: "Live prediction markets and CLOB execution",
-	},
-] as const satisfies readonly VenueConfig[];
+export const venues = providerCatalog.map((provider) => ({
+	description: provider.description,
+	id: provider.venue.id,
+	label: provider.venue.label,
+})) satisfies readonly VenueConfig[];
 
-export const defaultVenueId = venueIds.polymarket;
+export const defaultVenueId = defaultProvider.venue.id;
 
 export function getVenueConfig(venue: VenueId) {
 	return venues.find((item) => item.id === venue) ?? venues[0];

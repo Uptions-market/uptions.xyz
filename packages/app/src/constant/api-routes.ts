@@ -22,12 +22,15 @@ export const API_ROUTES = {
 	},
 	auth: {
 		forgotPassword: route("/auth/forgot-password"),
+		googleExchange: route("/auth/social/google/exchange"),
+		googleStart: route("/auth/social/google/start"),
 		login: route("/auth/login"),
 		logout: route("/auth/logout"),
 		logoutAll: route("/auth/logout-all"),
 		me: route("/auth/me"),
 		resetPassword: route("/auth/reset-password"),
 		signup: route("/auth/signup"),
+		socialProviders: route("/auth/social/providers"),
 		verifyEmail: route("/auth/verify-email"),
 	},
 	mcp: {
@@ -39,35 +42,52 @@ export const API_ROUTES = {
 		reject: (approvalId: string) =>
 			route(`/mcp/approvals/${encodeURIComponent(approvalId)}/reject`),
 	},
-	markets: {
-		comments: (marketId: string) =>
-			route(`/markets/${encodeURIComponent(marketId)}/comments`),
-		commentStream: (marketId: string) =>
-			route(`/markets/${encodeURIComponent(marketId)}/comments/stream`),
-		favorite: (marketId: string) =>
-			route(`/markets/${encodeURIComponent(marketId)}/favorite`),
-	},
-	polymarket: {
-		market: (marketId: string) =>
-			route(`/polymarket/markets/${encodeURIComponent(marketId)}`),
-		markets: route("/polymarket/markets"),
-		orderBook: (tokenId: string) =>
-			route(`/polymarket/order-books/${encodeURIComponent(tokenId)}`),
-		venueChain: route("/polymarket/venue-chain"),
+	providers: {
+		catalog: route("/providers"),
+		dflowOrder: route("/providers/dflow/order"),
+		dflowOrderStatus: route("/providers/dflow/order-status"),
+		commentStream: (provider: string, marketId: string) =>
+			route(
+				`/providers/${encodeURIComponent(provider)}/markets/${encodeURIComponent(marketId)}/comments/stream`,
+			),
+		comments: (provider: string, marketId: string) =>
+			route(
+				`/providers/${encodeURIComponent(provider)}/markets/${encodeURIComponent(marketId)}/comments`,
+			),
+		favorite: (provider: string, marketId: string) =>
+			route(
+				`/providers/${encodeURIComponent(provider)}/markets/${encodeURIComponent(marketId)}/favorite`,
+			),
+		favorites: (provider: string) =>
+			route(`/providers/${encodeURIComponent(provider)}/markets/favorites`),
+		market: (provider: string, marketId: string) =>
+			route(
+				`/providers/${encodeURIComponent(provider)}/markets/${encodeURIComponent(marketId)}`,
+			),
+		markets: (provider: string) =>
+			route(`/providers/${encodeURIComponent(provider)}/markets`),
+		orderBook: (provider: string, marketId: string) =>
+			route(
+				`/providers/${encodeURIComponent(provider)}/markets/${encodeURIComponent(marketId)}/order-book`,
+			),
+		connection: (provider: string) =>
+			route(`/providers/${encodeURIComponent(provider)}/connection`),
 	},
 	trades: {
 		cancel: (tradeId: string) =>
 			route(`/trades/${encodeURIComponent(tradeId)}/cancel`),
 		item: (tradeId: string) => route(`/trades/${encodeURIComponent(tradeId)}`),
 		list: route("/trades"),
+		cancelMarket: route("/trades/cancel-market"),
 		preflight: route("/trades/preflight"),
 		reconcile: (tradeId: string) =>
 			route(`/trades/${encodeURIComponent(tradeId)}/reconcile`),
 		submit: (tradeId: string) =>
 			route(`/trades/${encodeURIComponent(tradeId)}/submit`),
 	},
-	tradingProviders: route("/trading-providers"),
+
 	users: {
+		onboarding: route("/users/onboarding"),
 		settings: {
 			email: route("/users/settings/email"),
 			password: route("/users/settings/password"),
@@ -77,8 +97,5 @@ export const API_ROUTES = {
 		wallet: route("/users/wallet"),
 		walletChallenge: route("/users/wallet/challenge"),
 		waitlist: route("/users/waitlist"),
-	},
-	venueConnections: {
-		polymarket: route("/venue-connections/polymarket"),
 	},
 } as const;

@@ -4,8 +4,6 @@ import { AppKeyword } from "@/common";
 import { Typography } from "@/components/typography/typography.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import type { Market } from "@/packages/markets/market-utils.ts";
-import type { VenueId } from "@/packages/venues/venue-data.ts";
-import { venues } from "@/packages/venues/venue-data.ts";
 
 type WorkflowToolbarProps = {
 	canRedo: boolean;
@@ -17,9 +15,8 @@ type WorkflowToolbarProps = {
 	onRedo: () => void;
 	onTestRun: () => void;
 	onUndo: () => void;
-	onVenueChange: (venue: VenueId) => void;
 	statusMessage?: string | null;
-	venue: VenueId;
+	venueLabel: string;
 };
 
 export function WorkflowToolbar({
@@ -32,9 +29,8 @@ export function WorkflowToolbar({
 	onRedo,
 	onTestRun,
 	onUndo,
-	onVenueChange,
 	statusMessage,
-	venue,
+	venueLabel,
 }: WorkflowToolbarProps) {
 	return (
 		<header className="flex h-[68px] shrink-0 items-center justify-between gap-4 border-b border-[var(--app-border)] bg-builder-panel px-5">
@@ -42,20 +38,9 @@ export function WorkflowToolbar({
 				<Typography className="text-[var(--app-fg)]" variant="h3">
 					{market ? market.title : AppKeyword.UntitledWorkflow}
 				</Typography>
-				<label className="mt-1 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.08em] text-[var(--app-muted-fg)]">
-					{AppKeyword.Market}
-					<select
-						className="bg-transparent text-xs normal-case tracking-normal text-[var(--app-fg)] outline-none"
-						onChange={(event) => onVenueChange(event.target.value as VenueId)}
-						value={venue}
-					>
-						{venues.map((item) => (
-							<option key={item.id} value={item.id}>
-								{item.label}
-							</option>
-						))}
-					</select>
-				</label>
+				<p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--app-muted-fg)]">
+					{AppKeyword.Market} · {venueLabel}
+				</p>
 				{statusMessage ? (
 					<p className="mt-1 truncate text-xs font-medium text-primary">
 						{statusMessage}

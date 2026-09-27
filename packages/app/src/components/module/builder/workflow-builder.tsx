@@ -23,22 +23,14 @@ import {
 	useTestRunAutomation,
 	useUpdateAutomation,
 } from "@/hooks/use-automations.ts";
-import { usePolymarketMarket } from "@/hooks/use-polymarket-markets.ts";
+import { useMarket } from "@/hooks/use-markets.ts";
 import {
 	type WorkflowBlock,
 	workflowBlocks,
 } from "@/packages/builder/builder-data.ts";
-import { normalizeMarket } from "@/packages/markets/market-utils.ts";
-import {
-	supportedChain,
-	tradingProvider,
-} from "@/packages/types/auth.types.ts";
+import type { ProviderConfig } from "@/packages/providers/provider-config.ts";
 import type { PublishAutomationRequest } from "@/packages/types/automation.types.ts";
-import {
-	defaultVenueId,
-	getVenueConfig,
-	type VenueId,
-} from "@/packages/venues/venue-data.ts";
+
 import { getRequestErrorMessage } from "@/util/errors.ts";
 import {
 	appendWorkflowHistory,
@@ -64,11 +56,13 @@ import { WorkflowToolbar } from "./workflow-toolbar.tsx";
 type WorkflowBuilderProps = {
 	automationId?: string;
 	marketId?: string;
+	provider: ProviderConfig;
 };
 
 export function WorkflowBuilder({
 	automationId,
 	marketId,
+	provider,
 }: WorkflowBuilderProps) {
 	const [workflow, setWorkflow] = useState<WorkflowState>(
 		createInitialWorkflowState,
@@ -76,7 +70,6 @@ export function WorkflowBuilder({
 	const [past, setPast] = useState<WorkflowState[]>([]);
 	const [future, setFuture] = useState<WorkflowState[]>([]);
 	const [selectedNodeId, setSelectedNodeId] = useState<string>();
-	const [venue, setVenue] = useState<VenueId>(defaultVenueId);
 	const [publishedAutomationId, setPublishedAutomationId] = useState<string>();
 	const [publishOpen, setPublishOpen] = useState(false);
 	const [publishPayload, setPublishPayload] =
@@ -93,8 +86,7 @@ export function WorkflowBuilder({
 	const publishAutomation = usePublishAutomation();
 	const updateAutomation = useUpdateAutomation();
 	const testRunAutomation = useTestRunAutomation();
-	const { market } = usePolymarketMarket(marketId);
-	const selectedMarket = market ? normalizeMarket(market) : null;
+	const { market: selectedMarket } = useMarket(provider, marketId);
 	const workflowRef = useRef(workflow);
 	const dragStartRef = useRef<WorkflowState | null>(null);
 	const hydratedAutomationIdRef = useRef<string | null>(null);
@@ -111,13 +103,14 @@ export function WorkflowBuilder({
 
 		return {
 			market: {
-				id: marketId,
+				id: selectedMarket.id,
 				title: selectedMarket.title,
 			},
+			provider: provider.apiId,
 			title: selectedMarket.title,
 			workflow: toWorkflowPayload(workflow),
 		};
-	}, [marketId, selectedMarket, workflow]);
+	}, [marketId, provider.apiId, selectedMarket, workflow]);
 	const editAutomation = useMemo(
 		() => automations.find((automation) => automation.id === automationId),
 		[automationId, automations],
@@ -142,6 +135,14 @@ export function WorkflowBuilder({
 			return;
 		}
 
+		if (
+			editAutomation.provider !== provider.apiId ||
+			editAutomation.market_id !== marketId
+		) {
+			toast.error("This automation does not match the routed market provider.");
+			return;
+		}
+
 		const normalizedWorkflow = normalizeAutomationWorkflow(
 			editAutomation.workflow,
 		);
@@ -156,7 +157,7 @@ export function WorkflowBuilder({
 		setFuture([]);
 		setPublishedAutomationId(editAutomation.id);
 		hydratedAutomationIdRef.current = automationId;
-	}, [automationId, editAutomation]);
+	}, [automationId, editAutomation, marketId, provider.apiId]);
 
 	useEffect(() => {
 		if (
@@ -276,7 +277,11 @@ export function WorkflowBuilder({
 			commitWorkflow((current) => ({
 				...current,
 				nodes: current.nodes.concat({
-					data: { ...block, params: { ...block.params }, venue },
+					data: {
+						...block,
+						params: { ...block.params },
+						venue: provider.venue.id,
+					},
 					id: nodeId,
 					position,
 					type: "workflowBlock",
@@ -284,7 +289,7 @@ export function WorkflowBuilder({
 			}));
 			setSelectedNodeId(nodeId);
 		},
-		[commitWorkflow, venue],
+		[commitWorkflow, provider.venue.id],
 	);
 
 	const handleUpdateSelectedBlock = useCallback(
@@ -400,8 +405,15 @@ export function WorkflowBuilder({
 			return;
 		}
 
-		if (!user?.preferred_trading_provider) {
-			toast.error("Select a trading provider before publishing automation.");
+		if (!provider.capabilities.automations) {
+			toast.error(`${provider.label} automations are not available.`);
+			return;
+		}
+
+		if (user?.preferred_trading_provider !== provider.apiId) {
+			toast.error(
+				`Select ${provider.label} in Trading settings before publishing this automation.`,
+			);
 			return;
 		}
 
@@ -410,9 +422,9 @@ export function WorkflowBuilder({
 			return;
 		}
 
-		if (chainId !== 137) {
+		if (chainId !== provider.requiredChain.id) {
 			toast.error(
-				"Switch your wallet to Polygon before publishing automation.",
+				`Switch your wallet to ${provider.requiredChain.label} before publishing automation.`,
 			);
 			return;
 		}
@@ -423,9 +435,9 @@ export function WorkflowBuilder({
 				user.primary_wallet_address.toLowerCase() !== address.toLowerCase()
 			) {
 				await updateWallet.mutateAsync({
-					chain: supportedChain.polygon,
-					chain_id: 137,
-					provider: tradingProvider.polymarket,
+					chain: provider.requiredChain.apiId,
+					chain_id: provider.requiredChain.id,
+					provider: provider.apiId,
 					wallet_address: address,
 				});
 			}
@@ -435,7 +447,10 @@ export function WorkflowBuilder({
 			return;
 		}
 
-		const validationError = validateWorkflowForPublish(workflow);
+		const validationError = validateWorkflowForPublish(
+			workflow,
+			provider.apiId,
+		);
 
 		if (validationError) {
 			toast.error(validationError);
@@ -450,7 +465,7 @@ export function WorkflowBuilder({
 			createWorkflowPreview(
 				workflow,
 				selectedMarket.title,
-				getVenueConfig(venue).label,
+				provider.venue.label,
 			),
 		);
 		setPublishOpen(true);
@@ -463,7 +478,7 @@ export function WorkflowBuilder({
 		selectedMarket,
 		updateWallet,
 		user,
-		venue,
+		provider,
 		workflow,
 	]);
 
@@ -547,7 +562,10 @@ export function WorkflowBuilder({
 			return;
 		}
 
-		const validationError = validateWorkflowForPublish(workflow);
+		const validationError = validateWorkflowForPublish(
+			workflow,
+			provider.apiId,
+		);
 
 		if (validationError) {
 			toast.error(validationError);
@@ -569,10 +587,16 @@ export function WorkflowBuilder({
 			setStatusMessage(message);
 			toast.error(message ?? "Unable to test run automation");
 		}
-	}, [automationPayload, publishedAutomationId, testRunAutomation, workflow]);
+	}, [
+		automationPayload,
+		provider.apiId,
+		publishedAutomationId,
+		testRunAutomation,
+		workflow,
+	]);
 
 	return (
-		<DashboardLayout contentClassName="p-0">
+		<DashboardLayout contentClassName="p-0" walletProvider={provider}>
 			<div className="relative flex h-[calc(100dvh-4rem)] min-h-[720px] w-full overflow-hidden bg-builder-bg text-[var(--app-fg)]">
 				<CheckerBackground className="opacity-70" variant="builder" />
 				<BlockLibrary />
@@ -587,9 +611,8 @@ export function WorkflowBuilder({
 						onRedo={handleRedo}
 						onTestRun={handleTestRun}
 						onUndo={handleUndo}
-						onVenueChange={setVenue}
 						statusMessage={statusMessage}
-						venue={venue}
+						venueLabel={provider.venue.label}
 					/>
 					<WorkflowCanvas
 						edges={workflow.edges}
@@ -607,7 +630,7 @@ export function WorkflowBuilder({
 					market={selectedMarket}
 					onUpdateBlock={handleUpdateSelectedBlock}
 					selectedBlock={selectedBlock}
-					venue={venue}
+					venue={provider.venue.id}
 				/>
 				<CustomModal
 					className="max-h-[85dvh] overflow-y-auto border-app-border bg-app-card text-app-fg sm:max-w-150"
@@ -634,7 +657,7 @@ export function WorkflowBuilder({
 							onCancel={() => setPublishOpen(false)}
 							onConfirm={handleConfirmPublish}
 							preview={publishPreview}
-							venueLabel={getVenueConfig(venue).label}
+							venueLabel={provider.venue.label}
 						/>
 					) : null}
 				</CustomModal>

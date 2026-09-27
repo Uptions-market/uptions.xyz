@@ -6,6 +6,7 @@ import {
 	useWaitForTransactionReceipt,
 	useWriteContract,
 } from "wagmi";
+import { isTestnetTrading } from "@/config/trading-environment.ts";
 import {
 	erc20TradingAbi,
 	erc1155TradingAbi,
@@ -16,7 +17,7 @@ import {
 } from "@/constant/polymarket-contracts.ts";
 import { type TradeSide, tradeSide } from "@/packages/types/trade.types.ts";
 
-type ApprovalKind = "outcome" | "usdc";
+type ApprovalKind = "mint" | "outcome" | "usdc";
 
 type PolymarketReadinessInput = {
 	address?: Address;
@@ -98,7 +99,9 @@ export function usePolymarketReadiness({
 			return;
 		}
 
-		if (approvalKind === "usdc") {
+		if (approvalKind === "mint") {
+			usdcBalance.refetch();
+		} else if (approvalKind === "usdc") {
 			usdcAllowance.refetch();
 		} else {
 			outcomeApproval.refetch();
@@ -108,6 +111,7 @@ export function usePolymarketReadiness({
 		approvalReceipt.isSuccess,
 		outcomeApproval.refetch,
 		usdcAllowance.refetch,
+		usdcBalance.refetch,
 	]);
 
 	const isEoa =
@@ -133,7 +137,10 @@ export function usePolymarketReadiness({
 			return { ready: false, reason: "Connect an EOA wallet to trade." };
 		}
 		if (chainId !== POLYGON_CHAIN_ID) {
-			return { ready: false, reason: "Switch to Polygon to trade." };
+			return {
+				ready: false,
+				reason: `Switch to ${isTestnetTrading ? "Polygon Amoy" : "Polygon"} to trade.`,
+			};
 		}
 		if (bytecode.isError) {
 			return {
@@ -229,6 +236,23 @@ export function usePolymarketReadiness({
 		return hash;
 	};
 
+	const mintTestCollateral = async () => {
+		if (!isTestnetTrading) {
+			throw new Error("Test collateral can only be minted on Polygon Amoy.");
+		}
+
+		setApprovalKind("mint");
+		const hash = await writeApproval.writeContractAsync({
+			abi: erc20TradingAbi,
+			address: POLYMARKET_CONTRACTS.usdcE,
+			args: [owner, 10n * 10n ** BigInt(POLYGON_USDC_E_DECIMALS)],
+			chainId: POLYGON_CHAIN_ID,
+			functionName: "mint",
+		});
+		setApprovalHash(hash);
+		return hash;
+	};
+
 	const approveOutcome = async () => {
 		setApprovalKind("outcome");
 		const hash = await writeApproval.writeContractAsync({
@@ -260,6 +284,7 @@ export function usePolymarketReadiness({
 		hasShares,
 		isChecking,
 		isEoa,
+		mintTestCollateral,
 		outcomeBalance: sharesBalance,
 		outcomeBalanceFormatted: formatUnits(
 			sharesBalance,

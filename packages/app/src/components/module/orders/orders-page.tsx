@@ -11,6 +11,7 @@ import {
 	useTrades,
 } from "@/hooks/use-trades.ts";
 import { cn } from "@/lib/utils.ts";
+import { getProviderConfig } from "@/packages/providers/provider-config.ts";
 import {
 	type TradeIntent,
 	tradeSide,
@@ -76,7 +77,7 @@ export function OrdersContent({ embedded = false }: { embedded?: boolean }) {
 						Orders
 					</Typography>
 					<Typography className="mt-2 text-app-muted-fg" variant="bodySm">
-						Track Polymarket order lifecycle, cancellations, and reconciliation.
+						Track provider order lifecycle, cancellations, and reconciliation.
 					</Typography>
 				</div>
 				<Button
@@ -190,7 +191,8 @@ function OrderCard({
 							{trade.side}
 						</span>
 						<span className="text-xs font-medium text-app-muted-fg">
-							{trade.order_type} · {trade.execution_type}
+							{getProviderConfig(trade.provider).label} · {trade.order_type} ·{" "}
+							{trade.execution_type}
 						</span>
 					</div>
 					<Typography className="mt-3 truncate text-app-fg" variant="h3">

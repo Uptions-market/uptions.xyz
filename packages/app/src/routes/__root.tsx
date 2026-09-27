@@ -145,7 +145,7 @@ function RootDocument({ children }: { children: ReactNode }) {
 				/>
 				<HeadContent />
 			</head>
-			<body>
+			<body suppressHydrationWarning>
 				<QueryProvider>
 					<WalletProvider>
 						<ThemeProvider>{children}</ThemeProvider>

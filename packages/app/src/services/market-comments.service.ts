@@ -1,4 +1,5 @@
 import { API_ROUTES } from "@/constant/api-routes.ts";
+import type { ProviderConfig } from "@/packages/providers/provider-config.ts";
 import type { ApiResponse } from "@/packages/types/api.types.ts";
 import type {
 	CreateMarketCommentRequest,
@@ -10,22 +11,21 @@ import { uptionsRequest } from "@/services/api.service.ts";
 const COMMENTS_PAGE_SIZE = 50;
 
 class MarketCommentsService {
-	create(marketId: string, payload: CreateMarketCommentRequest) {
+	create(
+		provider: ProviderConfig,
+		marketId: string,
+		payload: CreateMarketCommentRequest,
+	) {
 		return uptionsRequest.POST<
 			ApiResponse<MarketComment>,
 			CreateMarketCommentRequest
-		>(API_ROUTES.markets.comments(marketId), payload);
+		>(API_ROUTES.providers.comments(provider.routeId, marketId), payload);
 	}
 
-	list(marketId: string, before?: string | null) {
+	list(provider: ProviderConfig, marketId: string, before?: string | null) {
 		return uptionsRequest.GET<ApiResponse<MarketCommentsPage>>(
-			API_ROUTES.markets.comments(marketId),
-			{
-				query: {
-					before,
-					limit: COMMENTS_PAGE_SIZE,
-				},
-			},
+			API_ROUTES.providers.comments(provider.routeId, marketId),
+			{ query: { before, limit: COMMENTS_PAGE_SIZE } },
 		);
 	}
 }

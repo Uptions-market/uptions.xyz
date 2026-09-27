@@ -1,4 +1,5 @@
 import { API_ROUTES } from "@/constant/api-routes.ts";
+import { defaultProvider } from "@/packages/providers/provider-config.ts";
 import type { ApiResponse } from "@/packages/types/api.types.ts";
 import type {
 	AuthSessionResponse,
@@ -6,10 +7,13 @@ import type {
 	ConnectPolymarketRequest,
 	EmailAuthRequest,
 	ForgotPasswordRequest,
+	GoogleAuthExchangeRequest,
+	GoogleAuthStartResponse,
 	LogoutResponse,
 	ResetPasswordRequest,
 	SettingsUpdateResponse,
 	SignupRequest,
+	SocialAuthProviders,
 	TradingProviderOption,
 	UpdateEmailRequest,
 	UpdatePasswordRequest,
@@ -51,6 +55,32 @@ export class AuthService {
 		return response.data.user;
 	}
 
+	async exchangeGoogle(payload: GoogleAuthExchangeRequest) {
+		const response = await uptionsRequest.POST<
+			ApiResponse<AuthSessionResponse>,
+			GoogleAuthExchangeRequest
+		>(API_ROUTES.auth.googleExchange, payload);
+
+		setAuthToken(response.data.access_token);
+
+		return response.data.user;
+	}
+
+	async startGoogle() {
+		const response = await uptionsRequest.POST<
+			ApiResponse<GoogleAuthStartResponse>,
+			undefined
+		>(API_ROUTES.auth.googleStart, undefined);
+
+		return response.data;
+	}
+
+	socialProviders() {
+		return uptionsRequest.GET<ApiResponse<SocialAuthProviders>>(
+			API_ROUTES.auth.socialProviders,
+		);
+	}
+
 	logout() {
 		return uptionsRequest.POST<ApiResponse<LogoutResponse>, undefined>(
 			API_ROUTES.auth.logout,
@@ -89,7 +119,14 @@ export class AuthService {
 
 	listTradingProviders() {
 		return uptionsRequest.GET<ApiResponse<TradingProviderOption[]>>(
-			API_ROUTES.tradingProviders,
+			API_ROUTES.providers.catalog,
+		);
+	}
+
+	completeOnboarding() {
+		return uptionsRequest.PATCH<ApiResponse<AuthUser>, undefined>(
+			API_ROUTES.users.onboarding,
+			undefined,
 		);
 	}
 
@@ -139,7 +176,7 @@ export class AuthService {
 		return uptionsRequest.POST<
 			ApiResponse<VenueConnection>,
 			ConnectPolymarketRequest
-		>(API_ROUTES.venueConnections.polymarket, payload);
+		>(API_ROUTES.providers.connection(defaultProvider.routeId), payload);
 	}
 }
 

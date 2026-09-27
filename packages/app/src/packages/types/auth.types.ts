@@ -1,3 +1,9 @@
+import {
+	type ProviderApiId,
+	providerApiIds,
+	type SupportedChain,
+	supportedChains,
+} from "@/packages/providers/provider-config.ts";
 import type { VenueId } from "@/packages/venues/venue-data.ts";
 
 export type EmailAuthRequest = {
@@ -44,30 +50,35 @@ export type VerifyEmailRequest = {
 	token: string;
 };
 
-export const tradingProvider = {
-	polymarket: "POLYMARKET",
-} as const;
+export type SocialAuthProviders = {
+	google: boolean;
+};
 
-export const supportedChain = {
-	polygon: "POLYGON",
-} as const;
+export type GoogleAuthStartResponse = {
+	authorization_url: string;
+};
 
-export type TradingProvider =
-	(typeof tradingProvider)[keyof typeof tradingProvider];
+export type GoogleAuthExchangeRequest = {
+	code: string;
+	state: string;
+};
 
-export type SupportedChain =
-	(typeof supportedChain)[keyof typeof supportedChain];
+export const tradingProvider = providerApiIds;
+export const supportedChain = supportedChains;
+export type TradingProvider = ProviderApiId;
+export type { SupportedChain };
 
 export type TradingProviderOption = {
 	available: boolean;
+	capabilities: string[];
 	chain: SupportedChain;
 	chain_id: number;
 	chain_label: string;
 	description: string;
+	id: string;
 	image_key: string;
 	label: string;
 	provider: TradingProvider;
-	venue_id: VenueId;
 };
 
 export type UpdateTradingProviderRequest = {
@@ -86,7 +97,9 @@ export type UpdateWalletRequest = {
 };
 
 export type WalletChallengeRequest = {
+	chain: SupportedChain;
 	chain_id: number;
+	provider: TradingProvider;
 	wallet_address: string;
 };
 
@@ -104,8 +117,18 @@ export type VerifiedWalletRequest = UpdateWalletRequest & {
 
 export type UserWalletResponse = UpdateWalletRequest;
 
+export type AccountWarning = {
+	action_href: string;
+	action_label: string;
+	code: string;
+	message: string;
+	severity: string;
+	title: string;
+};
+
 export type VenueConnection = {
 	id: string;
+	provider: TradingProvider;
 	venue: VenueId;
 	auth_type: string;
 	account_identifier: string;
@@ -116,14 +139,16 @@ export type VenueConnection = {
 };
 
 export type AuthUser = {
+	account_warnings?: AccountWarning[];
 	id: string;
+	onboarding_completed: boolean;
 	primary_wallet_address: string | null;
 	wallet_address: string | null;
 	email: string | null;
 	username: string | null;
 	email_verified: boolean;
 	password_configured: boolean;
-	preferred_trading_provider: TradingProvider | null;
+	preferred_trading_provider: TradingProvider;
 	venue_connections: VenueConnection[];
 };
 

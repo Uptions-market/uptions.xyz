@@ -1,12 +1,14 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Link } from "@tanstack/react-router";
 import { CheckCircle2, ChevronDown, ShieldAlert, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
 import { AuthPanel } from "@/components/auth/auth-panel.tsx";
 import { CustomModal } from "@/components/dialogs/custom-modal.tsx";
 import { Typography } from "@/components/typography/typography.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { isTestnetTrading } from "@/config/trading-environment.ts";
 import {
 	useConnectPolymarket,
 	useCurrentUser,
@@ -19,10 +21,11 @@ import {
 } from "@/hooks/use-trades.ts";
 import { cn } from "@/lib/utils.ts";
 import {
-	supportedChain,
-	tradingProvider,
-} from "@/packages/types/auth.types.ts";
-import type { PolymarketOrderBook } from "@/packages/types/market.types.ts";
+	getProviderConfig,
+	type MarketProviderContext,
+	providerApiIds,
+} from "@/packages/providers/provider-config.ts";
+import type { MarketOrderBook } from "@/packages/types/market.types.ts";
 import {
 	polymarketExecutionType,
 	type TradeOrderType,
@@ -45,6 +48,7 @@ export type TradeTicketOutcome = {
 };
 
 type MarketTradeTicketProps = {
+	marketContext: MarketProviderContext;
 	marketId: string;
 	marketImage?: string | null;
 	marketResolved?: boolean;
@@ -52,8 +56,8 @@ type MarketTradeTicketProps = {
 	negativeRisk: boolean;
 	onSelectedTokenIdChange: (tokenId: string) => void;
 	onTradeSubmitted?: () => void;
-	orderBook?: PolymarketOrderBook | null;
-	outcomes: TradeTicketOutcome[];
+	orderBook?: MarketOrderBook | null;
+	outcomes: readonly TradeTicketOutcome[];
 	selectedTokenId: string;
 	tickSize?: number | string;
 };
@@ -61,6 +65,7 @@ type MarketTradeTicketProps = {
 const quickAmounts = [1, 5, 10, 100];
 
 export function MarketTradeTicket({
+	marketContext,
 	marketId,
 	marketImage,
 	marketResolved = false,
@@ -82,11 +87,18 @@ export function MarketTradeTicket({
 	const [side, setSide] = useState<TradeSide>(tradeSide.buy);
 	const { address, chainId, isConnected } = useAccount();
 	const walletClient = useWalletClient();
+	const switchChain = useSwitchChain();
 	const { user } = useCurrentUser();
 	const connectPolymarket = useConnectPolymarket();
 	const createTradeIntent = useCreateTradeIntent();
 	const submitSignedTrade = useSubmitSignedTrade();
 	const updateWallet = useUpdateWallet();
+	const provider = getProviderConfig(marketContext.provider);
+	const providerMismatch =
+		Boolean(user) &&
+		user?.preferred_trading_provider !== marketContext.provider;
+	const chainMismatch =
+		Boolean(isConnected && chainId) && chainId !== marketContext.chainId;
 	const selectedOutcome = useMemo(
 		() =>
 			outcomes.find((outcome) => outcome.tokenId === selectedTokenId) ??
@@ -136,6 +148,7 @@ export function MarketTradeTicket({
 	});
 	const submitPending =
 		connectPolymarket.isPending ||
+		switchChain.isPending ||
 		createTradeIntent.isPending ||
 		submitSignedTrade.isPending ||
 		updateWallet.isPending;
@@ -156,8 +169,20 @@ export function MarketTradeTicket({
 			return;
 		}
 
-		if (!user.preferred_trading_provider) {
-			toast.error("Select a trading provider before trading.");
+		if (user.preferred_trading_provider !== marketContext.provider) {
+			toast.error(
+				`Select ${marketContext.providerLabel} in Trading settings before trading this market.`,
+			);
+			return;
+		}
+
+		if (!provider.capabilities.trading) {
+			toast.error(`${provider.label} trading is not available.`);
+			return;
+		}
+
+		if (marketContext.provider !== providerApiIds.polymarket) {
+			toast.error("This market provider has no signing adapter available.");
 			return;
 		}
 
@@ -166,13 +191,10 @@ export function MarketTradeTicket({
 			return;
 		}
 
-		if (chainId !== 137) {
-			toast.error("Switch your wallet to Polygon before trading.");
-			return;
-		}
-
-		if (!walletClient.data) {
-			toast.error("Wallet client is unavailable.");
+		if (chainId !== marketContext.chainId) {
+			toast.error(
+				`Switch your wallet to ${marketContext.chainLabel} before trading.`,
+			);
 			return;
 		}
 
@@ -202,11 +224,16 @@ export function MarketTradeTicket({
 			}
 		}
 
+		if (!walletClient.data) {
+			toast.error("Wallet client is unavailable.");
+			return;
+		}
+
 		try {
 			await updateWallet.mutateAsync({
-				chain: supportedChain.polygon,
-				chain_id: 137,
-				provider: tradingProvider.polymarket,
+				chain: marketContext.chain,
+				chain_id: marketContext.chainId,
+				provider: marketContext.provider,
 				wallet_address: address,
 			});
 
@@ -227,7 +254,7 @@ export function MarketTradeTicket({
 				outcome: selectedOutcome.label,
 				price:
 					orderType === tradeOrderType.limit ? limitBuyPreview.price : null,
-				provider: tradingProvider.polymarket,
+				provider: marketContext.provider,
 				side,
 				token_id: selectedOutcome.tokenId,
 				wallet_address: address,
@@ -283,7 +310,7 @@ export function MarketTradeTicket({
 			setAmount("");
 			setLimitPrice("");
 			onTradeSubmitted?.();
-			toast.success("Trade submitted to Polymarket");
+			toast.success(`Trade submitted to ${marketContext.providerLabel}`);
 		} catch (error) {
 			const message = getRequestErrorMessage(error, "Unable to submit trade");
 			toast.error(message ?? "Unable to submit trade");
@@ -387,7 +414,9 @@ export function MarketTradeTicket({
 							{side === tradeSide.buy ? "Amount" : "Shares"}
 						</label>
 						<span className="text-xs font-semibold text-app-muted-fg">
-							{side === tradeSide.buy ? "USDC.e" : "Outcome shares"}
+							{side === tradeSide.buy
+								? provider.assets.collateral
+								: "Outcome shares"}
 						</span>
 					</div>
 					<input
@@ -472,17 +501,25 @@ export function MarketTradeTicket({
 						)}
 						<div>
 							<p className="text-sm font-bold text-app-fg">
-								EOA-only private beta
+								{isTestnetTrading
+									? "Polygon Amoy live testnet"
+									: "EOA-only private beta"}
 							</p>
 							<p className="mt-1 text-xs font-medium text-app-muted-fg">
 								{walletReadiness.readiness.reason}
 							</p>
 						</div>
 					</div>
+					{isTestnetTrading ? (
+						<p className="text-xs font-medium text-app-muted-fg">
+							Orders are signed and submitted to Polymarket's Amoy CLOB using
+							testnet tokens.
+						</p>
+					) : null}
 					<div className="grid grid-cols-2 gap-3 text-xs">
 						<BalanceItem
 							label="Trading balance"
-							value={`${formatNumber(Number(walletReadiness.collateralBalanceFormatted))} USDC.e`}
+							value={`${formatNumber(Number(walletReadiness.collateralBalanceFormatted))} ${provider.assets.collateral}`}
 						/>
 						<BalanceItem
 							label="Selected outcome"
@@ -507,6 +544,19 @@ export function MarketTradeTicket({
 							);
 						}
 
+						if (providerMismatch) {
+							return (
+								<Button
+									asChild
+									className="h-14 bg-warning text-base font-bold text-warning-foreground hover:bg-warning/90"
+								>
+									<Link hash="trading" to="/settings">
+										Select {marketContext.providerLabel} in Trading settings
+									</Link>
+								</Button>
+							);
+						}
+
 						if (!connected) {
 							return (
 								<Button
@@ -520,14 +570,58 @@ export function MarketTradeTicket({
 							);
 						}
 
-						if (chain.unsupported || chainId !== 137) {
+						if (chain.unsupported || chainMismatch) {
 							return (
 								<Button
 									className="h-14 bg-danger text-base font-bold text-white hover:bg-danger/90"
-									onClick={openChainModal}
+									disabled={switchChain.isPending}
+									onClick={() => {
+										if (
+											switchChain.chains.some(
+												(item) => item.id === marketContext.chainId,
+											)
+										) {
+											switchChain.switchChain({
+												chainId: marketContext.chainId,
+											});
+											return;
+										}
+										openChainModal();
+									}}
 									type="button"
 								>
-									Switch to Polygon
+									{switchChain.isPending
+										? "Switching network..."
+										: `Switch to ${marketContext.chainLabel}`}
+								</Button>
+							);
+						}
+
+						if (
+							isTestnetTrading &&
+							side === tradeSide.buy &&
+							requiredCollateral > 0 &&
+							!walletReadiness.hasCollateral
+						) {
+							return (
+								<Button
+									className="h-14 bg-primary text-base font-bold text-primary-foreground hover:bg-primary/90"
+									disabled={walletReadiness.approvalPending}
+									onClick={() =>
+										walletReadiness
+											.mintTestCollateral()
+											.then(() => toast.success("Test USDC mint submitted"))
+											.catch((error) =>
+												toast.error(
+													getRequestErrorMessage(error, "Test mint failed"),
+												),
+											)
+									}
+									type="button"
+								>
+									{walletReadiness.approvalPending
+										? "Confirming test mint..."
+										: "Mint 10 test USDC"}
 								</Button>
 							);
 						}
@@ -606,8 +700,8 @@ export function MarketTradeTicket({
 									: submitPending
 										? "Submitting..."
 										: walletReadiness.readiness.ready
-										? `${side === tradeSide.buy ? "Buy" : "Sell"} ${selectedOutcome?.label ?? "Shares"}`
-										: "Wallet not ready"}
+											? `${side === tradeSide.buy ? "Buy" : "Sell"} ${selectedOutcome?.label ?? "Shares"}`
+											: "Wallet not ready"}
 							</Button>
 						);
 					}}
@@ -652,7 +746,7 @@ function getSignedOrderAmount({
 function getOutcomePrice(
 	outcomeTokenId: string,
 	selectedTokenId: string | undefined,
-	orderBook: PolymarketOrderBook | null | undefined,
+	orderBook: MarketOrderBook | null | undefined,
 	side: TradeSide,
 ) {
 	if (outcomeTokenId !== selectedTokenId) {

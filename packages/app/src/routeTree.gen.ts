@@ -9,39 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as OrdersRouteImport } from './routes/orders'
-import { Route as MarketsRouteImport } from './routes/markets'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as BuilderRouteImport } from './routes/builder'
-import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as MarketsMarketIdRouteImport } from './routes/markets_.$marketId'
-import { Route as MarketIdBuilderRouteImport } from './routes/$marketId.builder'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as BuilderRouteImport } from './routes/builder'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as MarketsRouteImport } from './routes/markets'
+import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as MarketsProviderRouteImport } from './routes/markets_.$provider'
+import { Route as MarketsProviderIndexRouteImport } from './routes/markets_.$provider.index'
+import { Route as MarketsProviderMarketIdRouteImport } from './routes/markets_.$provider.$marketId'
+import { Route as MarketsProviderMarketIdBuilderRouteImport } from './routes/markets_.$provider.$marketId_.builder'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrdersRoute = OrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MarketsRoute = MarketsRouteImport.update({
-  id: '/markets',
-  path: '/markets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BuilderRoute = BuilderRouteImport.update({
-  id: '/builder',
-  path: '/builder',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -49,21 +32,57 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketsRoute = MarketsRouteImport.update({
+  id: '/markets',
+  path: '/markets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketsProviderRoute = MarketsProviderRouteImport.update({
+  id: '/markets_/$provider',
+  path: '/markets/$provider',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketsProviderIndexRoute = MarketsProviderIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => MarketsProviderRoute,
 } as any)
-const MarketsMarketIdRoute = MarketsMarketIdRouteImport.update({
-  id: '/markets_/$marketId',
-  path: '/markets/$marketId',
-  getParentRoute: () => rootRouteImport,
+const MarketsProviderMarketIdRoute = MarketsProviderMarketIdRouteImport.update({
+  id: '/$marketId',
+  path: '/$marketId',
+  getParentRoute: () => MarketsProviderRoute,
 } as any)
-const MarketIdBuilderRoute = MarketIdBuilderRouteImport.update({
-  id: '/$marketId/builder',
-  path: '/$marketId/builder',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const MarketsProviderMarketIdBuilderRoute =
+  MarketsProviderMarketIdBuilderRouteImport.update({
+    id: '/$marketId_/builder',
+    path: '/$marketId/builder',
+    getParentRoute: () => MarketsProviderRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,8 +92,11 @@ export interface FileRoutesByFullPath {
   '/markets': typeof MarketsRoute
   '/orders': typeof OrdersRoute
   '/settings': typeof SettingsRoute
-  '/$marketId/builder': typeof MarketIdBuilderRoute
-  '/markets/$marketId': typeof MarketsMarketIdRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/markets/$provider': typeof MarketsProviderRouteWithChildren
+  '/markets/$provider/$marketId': typeof MarketsProviderMarketIdRoute
+  '/markets/$provider/': typeof MarketsProviderIndexRoute
+  '/markets/$provider/$marketId/builder': typeof MarketsProviderMarketIdBuilderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,8 +106,10 @@ export interface FileRoutesByTo {
   '/markets': typeof MarketsRoute
   '/orders': typeof OrdersRoute
   '/settings': typeof SettingsRoute
-  '/$marketId/builder': typeof MarketIdBuilderRoute
-  '/markets/$marketId': typeof MarketsMarketIdRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/markets/$provider/$marketId': typeof MarketsProviderMarketIdRoute
+  '/markets/$provider': typeof MarketsProviderIndexRoute
+  '/markets/$provider/$marketId/builder': typeof MarketsProviderMarketIdBuilderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,8 +120,11 @@ export interface FileRoutesById {
   '/markets': typeof MarketsRoute
   '/orders': typeof OrdersRoute
   '/settings': typeof SettingsRoute
-  '/$marketId/builder': typeof MarketIdBuilderRoute
-  '/markets_/$marketId': typeof MarketsMarketIdRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/markets_/$provider': typeof MarketsProviderRouteWithChildren
+  '/markets_/$provider/$marketId': typeof MarketsProviderMarketIdRoute
+  '/markets_/$provider/': typeof MarketsProviderIndexRoute
+  '/markets_/$provider/$marketId_/builder': typeof MarketsProviderMarketIdBuilderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,8 +136,11 @@ export interface FileRouteTypes {
     | '/markets'
     | '/orders'
     | '/settings'
-    | '/$marketId/builder'
-    | '/markets/$marketId'
+    | '/auth/callback'
+    | '/markets/$provider'
+    | '/markets/$provider/$marketId'
+    | '/markets/$provider/'
+    | '/markets/$provider/$marketId/builder'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,8 +150,10 @@ export interface FileRouteTypes {
     | '/markets'
     | '/orders'
     | '/settings'
-    | '/$marketId/builder'
-    | '/markets/$marketId'
+    | '/auth/callback'
+    | '/markets/$provider/$marketId'
+    | '/markets/$provider'
+    | '/markets/$provider/$marketId/builder'
   id:
     | '__root__'
     | '/'
@@ -131,8 +163,11 @@ export interface FileRouteTypes {
     | '/markets'
     | '/orders'
     | '/settings'
-    | '/$marketId/builder'
-    | '/markets_/$marketId'
+    | '/auth/callback'
+    | '/markets_/$provider'
+    | '/markets_/$provider/$marketId'
+    | '/markets_/$provider/'
+    | '/markets_/$provider/$marketId_/builder'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -143,45 +178,17 @@ export interface RootRouteChildren {
   MarketsRoute: typeof MarketsRoute
   OrdersRoute: typeof OrdersRoute
   SettingsRoute: typeof SettingsRoute
-  MarketIdBuilderRoute: typeof MarketIdBuilderRoute
-  MarketsMarketIdRoute: typeof MarketsMarketIdRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  MarketsProviderRoute: typeof MarketsProviderRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/orders': {
-      id: '/orders'
-      path: '/orders'
-      fullPath: '/orders'
-      preLoaderRoute: typeof OrdersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/markets': {
-      id: '/markets'
-      path: '/markets'
-      fullPath: '/markets'
-      preLoaderRoute: typeof MarketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/builder': {
-      id: '/builder'
-      path: '/builder'
-      fullPath: '/builder'
-      preLoaderRoute: typeof BuilderRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics': {
@@ -191,29 +198,94 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/markets': {
+      id: '/markets'
+      path: '/markets'
+      fullPath: '/markets'
+      preLoaderRoute: typeof MarketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/markets_/$provider': {
+      id: '/markets_/$provider'
+      path: '/markets/$provider'
+      fullPath: '/markets/$provider'
+      preLoaderRoute: typeof MarketsProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/markets_/$provider/': {
+      id: '/markets_/$provider/'
       path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/markets/$provider/'
+      preLoaderRoute: typeof MarketsProviderIndexRouteImport
+      parentRoute: typeof MarketsProviderRoute
     }
-    '/markets_/$marketId': {
-      id: '/markets_/$marketId'
-      path: '/markets/$marketId'
-      fullPath: '/markets/$marketId'
-      preLoaderRoute: typeof MarketsMarketIdRouteImport
-      parentRoute: typeof rootRouteImport
+    '/markets_/$provider/$marketId': {
+      id: '/markets_/$provider/$marketId'
+      path: '/$marketId'
+      fullPath: '/markets/$provider/$marketId'
+      preLoaderRoute: typeof MarketsProviderMarketIdRouteImport
+      parentRoute: typeof MarketsProviderRoute
     }
-    '/$marketId/builder': {
-      id: '/$marketId/builder'
+    '/markets_/$provider/$marketId_/builder': {
+      id: '/markets_/$provider/$marketId_/builder'
       path: '/$marketId/builder'
-      fullPath: '/$marketId/builder'
-      preLoaderRoute: typeof MarketIdBuilderRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/markets/$provider/$marketId/builder'
+      preLoaderRoute: typeof MarketsProviderMarketIdBuilderRouteImport
+      parentRoute: typeof MarketsProviderRoute
     }
   }
 }
+
+interface MarketsProviderRouteChildren {
+  MarketsProviderMarketIdRoute: typeof MarketsProviderMarketIdRoute
+  MarketsProviderIndexRoute: typeof MarketsProviderIndexRoute
+  MarketsProviderMarketIdBuilderRoute: typeof MarketsProviderMarketIdBuilderRoute
+}
+
+const MarketsProviderRouteChildren: MarketsProviderRouteChildren = {
+  MarketsProviderMarketIdRoute: MarketsProviderMarketIdRoute,
+  MarketsProviderIndexRoute: MarketsProviderIndexRoute,
+  MarketsProviderMarketIdBuilderRoute: MarketsProviderMarketIdBuilderRoute,
+}
+
+const MarketsProviderRouteWithChildren = MarketsProviderRoute._addFileChildren(
+  MarketsProviderRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -223,8 +295,8 @@ const rootRouteChildren: RootRouteChildren = {
   MarketsRoute: MarketsRoute,
   OrdersRoute: OrdersRoute,
   SettingsRoute: SettingsRoute,
-  MarketIdBuilderRoute: MarketIdBuilderRoute,
-  MarketsMarketIdRoute: MarketsMarketIdRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
+  MarketsProviderRoute: MarketsProviderRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

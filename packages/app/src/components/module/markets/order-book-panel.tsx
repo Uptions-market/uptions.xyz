@@ -3,8 +3,8 @@ import { Typography } from "@/components/typography/typography.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { cn } from "@/lib/utils.ts";
 import type {
-	PolymarketOrderBook,
-	PolymarketOrderBookLevel,
+	MarketOrderBook,
+	MarketOrderBookLevel,
 } from "@/packages/types/market.types.ts";
 import type {
 	PolymarketMarketResolution,
@@ -25,8 +25,8 @@ type MarketOrderBookPanelProps = {
 	isStale: boolean;
 	marketResolution: PolymarketMarketResolution | null;
 	onSelectedTokenIdChange: (tokenId: string) => void;
-	orderBook?: PolymarketOrderBook | null;
-	outcomes: MarketOrderBookOutcome[];
+	orderBook?: MarketOrderBook | null;
+	outcomes: readonly MarketOrderBookOutcome[];
 	selectedTokenId: string;
 	tickSizeChange: PolymarketTickSizeChange | null;
 	volume: string;
@@ -228,7 +228,7 @@ function OrderBookRow({
 	level,
 	tone,
 }: {
-	level: PolymarketOrderBookLevel;
+	level: MarketOrderBookLevel;
 	tone: "ask" | "bid";
 }) {
 	return (

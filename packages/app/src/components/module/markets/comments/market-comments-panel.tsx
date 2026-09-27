@@ -11,9 +11,11 @@ import {
 	useMarketComments,
 } from "@/hooks/use-market-comments.ts";
 import { cn } from "@/lib/utils.ts";
+import type { ProviderConfig } from "@/packages/providers/provider-config.ts";
 
 type MarketCommentsPanelProps = {
 	marketId: string;
+	provider: ProviderConfig;
 };
 
 const connectionLabels: Record<MarketCommentConnectionStatus, string> = {
@@ -23,7 +25,10 @@ const connectionLabels: Record<MarketCommentConnectionStatus, string> = {
 	reconnecting: "Reconnecting",
 };
 
-export function MarketCommentsPanel({ marketId }: MarketCommentsPanelProps) {
+export function MarketCommentsPanel({
+	marketId,
+	provider,
+}: MarketCommentsPanelProps) {
 	const {
 		comments,
 		connectionStatus,
@@ -37,7 +42,7 @@ export function MarketCommentsPanel({ marketId }: MarketCommentsPanelProps) {
 		postError,
 		refetch,
 		resetPostError,
-	} = useMarketComments(marketId);
+	} = useMarketComments(provider, marketId);
 	const hasComments = comments.length > 0;
 
 	return (

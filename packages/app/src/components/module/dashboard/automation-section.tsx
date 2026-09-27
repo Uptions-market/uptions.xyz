@@ -12,6 +12,7 @@ import {
 	useDeleteAutomation,
 	useSetAutomationStatus,
 } from "@/hooks/use-automations.ts";
+import { getProviderRouteId } from "@/packages/providers/provider-config.ts";
 import type { Automation } from "@/packages/types/automation.types.ts";
 import { automationStatus } from "@/packages/types/automation.types.ts";
 import { formatDate } from "@/util/formatters.ts";
@@ -69,7 +70,9 @@ function AutomationCard({ automation }: { automation: Automation }) {
 	const marketLabel =
 		automation.market_title ?? automation.market_id ?? "General workflow";
 	const preview = useAutomationPreview(automation);
-	const editTo = automation.market_id ? "/$marketId/builder" : "/builder";
+	const editTo = automation.market_id
+		? "/markets/$provider/$marketId/builder"
+		: "/builder";
 	const isPaused = automation.status === automationStatus.paused;
 
 	const handleSetStatus = async () => {
@@ -248,7 +251,10 @@ function AutomationCard({ automation }: { automation: Automation }) {
 							<Link
 								params={
 									automation.market_id
-										? { marketId: automation.market_id }
+										? {
+												marketId: automation.market_id,
+												provider: getProviderRouteId(automation.provider),
+											}
 										: undefined
 								}
 								search={{ automationId: automation.id }}

@@ -1,4 +1,3 @@
-import type { PolymarketMarket } from "@/packages/types/market.types.ts";
 import { getFiniteNumber } from "./numbers.ts";
 
 export function formatCompactCurrency(value: number | string | undefined) {
@@ -36,10 +35,10 @@ export function formatMarketPrice(value: number | string | undefined) {
 	const numberValue = getFiniteNumber(value);
 
 	if (numberValue === null) {
-		return "$0.00";
+		return "—";
 	}
 
-	return `$${numberValue.toFixed(2)}`;
+	return `${(numberValue * 100).toFixed(numberValue < 0.01 ? 2 : 1)}¢`;
 }
 
 export function formatOutcomePercent(value: number | string | undefined) {
@@ -52,7 +51,10 @@ export function formatOutcomePercent(value: number | string | undefined) {
 	return `${Math.round(numberValue * 100)}%`;
 }
 
-export function formatMarketWindow(market: PolymarketMarket) {
+export function formatMarketWindow(market: {
+	endDate: string | null;
+	startDate: string | null;
+}) {
 	const start = formatDate(market.startDate);
 	const end = formatDate(market.endDate);
 

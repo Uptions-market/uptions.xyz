@@ -128,7 +128,7 @@ export class ApiService {
 		const data = await this.parseResponse(response);
 
 		if (!response.ok) {
-			if (response.status === 401) {
+			if (response.status === 401 && this.isSessionValidation(response)) {
 				clearAuthToken();
 			}
 
@@ -140,6 +140,14 @@ export class ApiService {
 		}
 
 		return data as TResponse;
+	}
+
+	private isSessionValidation(response: Response) {
+		try {
+			return new URL(response.url).pathname === "/api/v1/auth/me";
+		} catch {
+			return false;
+		}
 	}
 
 	private async parseResponse(response: Response) {

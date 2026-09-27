@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils.ts";
 import { getAuthFormButtonLabel } from "@/util/auth.ts";
 import { getRequestErrorMessage } from "@/util/errors.ts";
+import { GoogleSocialAuth } from "./google-social-auth.tsx";
 
 type AuthPanelProps = {
 	className?: string;
@@ -195,6 +196,10 @@ export function AuthPanel({
 					</button>
 				</div>
 			</div>
+			{(mode === AuthMode.LOGIN || mode === AuthMode.SIGNUP) &&
+			!verificationToken ? (
+				<GoogleSocialAuth />
+			) : null}
 			{mode === AuthMode.SIGNUP && !verificationToken && (
 				<label className="grid gap-2">
 					<span className="text-xs font-medium text-app-muted-fg">

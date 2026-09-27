@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "@/components/errors/api.error.ts";
+import type { ProviderConfig } from "@/packages/providers/provider-config.ts";
 import type { ApiResponse } from "@/packages/types/api.types.ts";
 import {
 	MARKET_COMMENT_MAX_LENGTH,
@@ -28,12 +29,17 @@ type MarketCommentsQueryData = InfiniteData<
 	string | null
 >;
 
-export const marketCommentsQueryKey = (marketId: string) =>
-	["markets", marketId, "comments"] as const;
+export const marketCommentsQueryKey = (
+	provider: ProviderConfig,
+	marketId: string,
+) => ["providers", provider.routeId, "markets", marketId, "comments"] as const;
 
-export function useMarketComments(marketId: string) {
+export function useMarketComments(provider: ProviderConfig, marketId: string) {
 	const queryClient = useQueryClient();
-	const queryKey = useMemo(() => marketCommentsQueryKey(marketId), [marketId]);
+	const queryKey = useMemo(
+		() => marketCommentsQueryKey(provider, marketId),
+		[marketId, provider],
+	);
 	const seenStreamCommentIds = useRef(new Set<string>());
 	const [connectionStatus, setConnectionStatus] =
 		useState<MarketCommentConnectionStatus>("connecting");
@@ -44,15 +50,18 @@ export function useMarketComments(marketId: string) {
 		ReturnType<typeof marketCommentsQueryKey>,
 		string | null
 	>({
-		enabled: Boolean(marketId && getAuthToken()),
+		enabled: Boolean(
+			marketId && getAuthToken() && provider.capabilities.comments,
+		),
 		getNextPageParam: (lastPage) => lastPage.data.next_cursor ?? undefined,
 		initialPageParam: null as string | null,
-		queryFn: ({ pageParam }) => marketCommentsService.list(marketId, pageParam),
+		queryFn: ({ pageParam }) =>
+			marketCommentsService.list(provider, marketId, pageParam),
 		queryKey,
 	});
 	const postMutation = useMutation({
 		mutationFn: (body: string) =>
-			marketCommentsService.create(marketId, { body: body.trim() }),
+			marketCommentsService.create(provider, marketId, { body: body.trim() }),
 		onSuccess: (response) => {
 			addCommentToCache(queryClient, queryKey, response.data);
 		},
@@ -61,7 +70,7 @@ export function useMarketComments(marketId: string) {
 	useEffect(() => {
 		seenStreamCommentIds.current.clear();
 
-		if (!marketId || !getAuthToken()) {
+		if (!marketId || !getAuthToken() || !provider.capabilities.comments) {
 			setConnectionStatus("offline");
 			return;
 		}
@@ -78,8 +87,10 @@ export function useMarketComments(marketId: string) {
 			try {
 				await marketCommentStreamService.connect({
 					marketId,
+					provider,
 					onComment: ({ comment }) => {
 						if (
+							comment.provider !== provider.apiId ||
 							comment.market_id !== marketId ||
 							seenStreamCommentIds.current.has(comment.id)
 						) {
@@ -132,7 +143,7 @@ export function useMarketComments(marketId: string) {
 				window.clearTimeout(retryTimeout);
 			}
 		};
-	}, [marketId, queryClient, queryKey]);
+	}, [marketId, provider, queryClient, queryKey]);
 
 	const comments = deduplicateComments(
 		query.data?.pages.flatMap((page) => page.data.comments) ?? [],

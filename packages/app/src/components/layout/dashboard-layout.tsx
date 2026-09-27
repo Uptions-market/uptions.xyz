@@ -1,20 +1,25 @@
 import type { ReactNode } from "react";
 
+import { AccountWarningsBanner } from "@/components/banners/account-warnings-banner.tsx";
 import DashboardHeader from "@/components/headers/dashboard-header";
-import { TradingProviderModal } from "@/components/wallet/trading-provider-modal.tsx";
+import { FirstLoginOnboarding } from "@/components/onboarding/first-login-onboarding.tsx";
+
 import { useAutomationAlertStream } from "@/hooks/use-automations.ts";
 import { cn } from "@/lib/utils.ts";
+import type { ProviderConfig } from "@/packages/providers/provider-config.ts";
 
 type DashboardLayoutProps = {
 	children: ReactNode;
 	className?: string;
 	contentClassName?: string;
+	walletProvider?: ProviderConfig;
 };
 
 export function DashboardLayout({
 	children,
 	className,
 	contentClassName,
+	walletProvider,
 }: DashboardLayoutProps) {
 	useAutomationAlertStream();
 
@@ -25,9 +30,9 @@ export function DashboardLayout({
 				className,
 			)}
 		>
-      <DashboardHeader />
-
-			<TradingProviderModal />
+			<DashboardHeader walletProvider={walletProvider} />
+			<AccountWarningsBanner />
+			<FirstLoginOnboarding />
 			<div className={cn("w-full flex-1", contentClassName)}>{children}</div>
 		</main>
 	);

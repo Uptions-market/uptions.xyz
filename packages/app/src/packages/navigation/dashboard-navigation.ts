@@ -1,12 +1,4 @@
-import {
-	BarChart3,
-	Bell,
-	Hammer,
-	Home,
-	LineChart,
-	ListOrdered,
-	Settings,
-} from "lucide-react";
+import { BarChart3, Bell, Home, LineChart, ListOrdered } from "lucide-react";
 import { AppKeyword } from "@/common";
 
 export const dashboardNavigationItems = [

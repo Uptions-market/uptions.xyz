@@ -1,10 +1,12 @@
 import { ApiError } from "@/components/errors/api.error.ts";
 import { API_ROUTES } from "@/constant/api-routes.ts";
+import type { ProviderConfig } from "@/packages/providers/provider-config.ts";
 import type { MarketCommentStreamEvent } from "@/packages/types/market-comment.types.ts";
 import { getAuthToken } from "@/services/auth-token.service.ts";
 
 type MarketCommentStreamOptions = {
 	marketId: string;
+	provider: ProviderConfig;
 	onComment: (event: MarketCommentStreamEvent) => void;
 	onConnected?: () => void;
 	signal?: AbortSignal;
@@ -18,6 +20,7 @@ type SseMessage = {
 class MarketCommentStreamService {
 	async connect({
 		marketId,
+		provider,
 		onComment,
 		onConnected,
 		signal,
@@ -28,7 +31,7 @@ class MarketCommentStreamService {
 			throw new ApiError("Sign in to receive comment updates", 401, null);
 		}
 
-		const response = await fetch(this.streamUrl(marketId), {
+		const response = await fetch(this.streamUrl(provider, marketId), {
 			headers: {
 				Accept: "text/event-stream",
 				Authorization: `Bearer ${token}`,
@@ -136,8 +139,8 @@ class MarketCommentStreamService {
 		}
 	}
 
-	private streamUrl(marketId: string) {
-		const path = API_ROUTES.markets.commentStream(marketId);
+	private streamUrl(provider: ProviderConfig, marketId: string) {
+		const path = API_ROUTES.providers.commentStream(provider.routeId, marketId);
 		const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
 		return baseUrl ? new URL(path, baseUrl).toString() : path;
