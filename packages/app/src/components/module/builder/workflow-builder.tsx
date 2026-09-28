@@ -49,6 +49,7 @@ import {
 	workflowHistoryLimit,
 } from "@/util/workflow.ts";
 import { BlockLibrary } from "./block-library.tsx";
+import { AutomationAssistantPanel } from "./automation-assistant-panel.tsx";
 import { InspectorPanel } from "./inspector-panel.tsx";
 import { WorkflowCanvas } from "./workflow-canvas.tsx";
 import { WorkflowToolbar } from "./workflow-toolbar.tsx";
@@ -595,6 +596,16 @@ export function WorkflowBuilder({
 		workflow,
 	]);
 
+	const handleAssistantWorkflow = useCallback(
+		(generatedWorkflow: PublishAutomationRequest["workflow"]) => {
+			commitWorkflow(() => createWorkflowStateFromPayload(generatedWorkflow));
+			setSelectedNodeId(undefined);
+			setStatusMessage("AI draft applied. Review the workflow before publishing.");
+			toast.success("AI workflow applied to the canvas");
+		},
+		[commitWorkflow],
+	);
+
 	return (
 		<DashboardLayout contentClassName="p-0" walletProvider={provider}>
 			<div className="relative flex h-[calc(100dvh-4rem)] min-h-[720px] w-full overflow-hidden bg-builder-bg text-[var(--app-fg)]">
@@ -627,6 +638,21 @@ export function WorkflowBuilder({
 					/>
 				</section>
 				<InspectorPanel
+					assistant={
+						<AutomationAssistantPanel
+							currentWorkflow={toWorkflowPayload(workflow)}
+							market={
+								selectedMarket
+									? {
+											id: selectedMarket.id,
+											title: selectedMarket.title,
+										}
+									: null
+							}
+							onApply={handleAssistantWorkflow}
+							provider={provider.apiId}
+						/>
+					}
 					market={selectedMarket}
 					onUpdateBlock={handleUpdateSelectedBlock}
 					selectedBlock={selectedBlock}

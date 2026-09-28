@@ -1,4 +1,5 @@
-import { DraftingCompass } from "lucide-react";
+import { Bot, DraftingCompass, SlidersHorizontal } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { AppKeyword, BuilderFieldName } from "@/common";
 import { Typography } from "@/components/typography/typography.tsx";
@@ -18,6 +19,7 @@ import type { VenueId } from "@/packages/venues/venue-data.ts";
 import { getVenueConfig } from "@/packages/venues/venue-data.ts";
 
 type InspectorPanelProps = {
+	assistant: ReactNode;
 	market?: Market | null;
 	onUpdateBlock: (updates: Partial<WorkflowBlock>) => void;
 	selectedBlock?: WorkflowBlock;
@@ -25,12 +27,22 @@ type InspectorPanelProps = {
 };
 
 export function InspectorPanel({
+	assistant,
 	market,
 	onUpdateBlock,
 	selectedBlock,
 	venue,
 }: InspectorPanelProps) {
+	const [activePanel, setActivePanel] = useState<"assistant" | "inspector">(
+		"assistant",
+	);
 	const activeVenue = getVenueConfig(venue);
+
+	useEffect(() => {
+		if (selectedBlock) {
+			setActivePanel("inspector");
+		}
+	}, [selectedBlock]);
 	const updateParams = (updates: Record<string, WorkflowParamValue>) => {
 		if (!selectedBlock) {
 			return;
@@ -47,8 +59,24 @@ export function InspectorPanel({
 	};
 
 	return (
-		<aside className="relative z-10 hidden min-h-0 w-[300px] border-l border-[var(--app-border)] bg-builder-panel/90 backdrop-blur xl:flex xl:flex-col">
-			{selectedBlock ? (
+		<aside className="relative z-10 hidden min-h-0 w-[360px] border-l border-[var(--app-border)] bg-builder-panel/90 backdrop-blur xl:flex xl:flex-col">
+			<div className="grid grid-cols-2 border-b border-[var(--app-border)] p-2">
+				<PanelTab
+					active={activePanel === "assistant"}
+					icon={Bot}
+					label="AI Builder"
+					onClick={() => setActivePanel("assistant")}
+				/>
+				<PanelTab
+					active={activePanel === "inspector"}
+					icon={SlidersHorizontal}
+					label="Inspector"
+					onClick={() => setActivePanel("inspector")}
+				/>
+			</div>
+			{activePanel === "assistant" ? (
+				assistant
+			) : selectedBlock ? (
 				<div className="p-6">
 					<Typography className="text-[var(--app-fg)]" variant="h3">
 						{AppKeyword.ConfigureNode}
@@ -145,6 +173,33 @@ export function InspectorPanel({
 				</div>
 			)}
 		</aside>
+	);
+}
+
+function PanelTab({
+	active,
+	icon: Icon,
+	label,
+	onClick,
+}: {
+	active: boolean;
+	icon: typeof Bot;
+	label: string;
+	onClick: () => void;
+}) {
+	return (
+		<button
+			className={`flex h-10 items-center justify-center gap-2 text-xs font-semibold transition-colors ${
+				active
+					? "bg-primary text-primary-foreground"
+					: "text-[var(--app-muted-fg)] hover:bg-[var(--app-muted)] hover:text-[var(--app-fg)]"
+			}`}
+			onClick={onClick}
+			type="button"
+		>
+			<Icon className="size-3.5" />
+			{label}
+		</button>
 	);
 }
 

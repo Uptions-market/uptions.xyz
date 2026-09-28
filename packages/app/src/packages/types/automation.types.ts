@@ -2,6 +2,7 @@ import type {
 	ProviderApiId,
 	SupportedChain,
 } from "@/packages/providers/provider-config.ts";
+import type { LlmProvider } from "@/packages/types/llm-provider.types.ts";
 
 export const automationStepKind = {
 	action: "ACTION",
@@ -102,6 +103,26 @@ export type PublishAutomationRequest = {
 	provider: AutomationProvider;
 	title: string;
 	workflow: WorkflowPayload;
+};
+
+export type AutomationAssistantMessage = {
+	content: string;
+	role: "assistant" | "user";
+};
+
+export type AutomationAssistantRequest = {
+	current_workflow?: WorkflowPayload;
+	market: AutomationMarketPayload;
+	llm_provider: LlmProvider;
+	messages: AutomationAssistantMessage[];
+	prompt: string;
+	provider: AutomationProvider;
+};
+
+export type AutomationAssistantResponse = {
+	reply: string;
+	title: string | null;
+	workflow: WorkflowPayload | null;
 };
 
 export type TestRunAutomationRequest = PublishAutomationRequest & {

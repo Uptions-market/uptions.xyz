@@ -5,6 +5,7 @@ import { ApiError } from "@/components/errors/api.error.ts";
 import type { ApiResponse } from "@/packages/types/api.types.ts";
 import type {
 	AutomationAlert,
+	AutomationAssistantRequest,
 	AutomationStatus,
 	PublishAutomationRequest,
 	TestRunAutomationRequest,
@@ -32,6 +33,13 @@ export function useAutomations() {
 		isLoading: query.isLoading,
 		refetch: query.refetch,
 	};
+}
+
+export function useAutomationAssistant() {
+	return useMutation({
+		mutationFn: (payload: AutomationAssistantRequest) =>
+			automationService.assistant(payload),
+	});
 }
 
 export function useAutomationAlerts() {

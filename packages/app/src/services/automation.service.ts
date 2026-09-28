@@ -3,6 +3,8 @@ import type { ApiResponse } from "@/packages/types/api.types.ts";
 import type {
 	Automation,
 	AutomationAlert,
+	AutomationAssistantRequest,
+	AutomationAssistantResponse,
 	ClearAlertsResponse,
 	MarkAlertsReadResponse,
 	PublishAutomationRequest,
@@ -13,6 +15,13 @@ import type {
 import { uptionsRequest } from "@/services/api.service.ts";
 
 export class AutomationService {
+	assistant(payload: AutomationAssistantRequest) {
+		return uptionsRequest.POST<
+			ApiResponse<AutomationAssistantResponse>,
+			AutomationAssistantRequest
+		>(API_ROUTES.automations.assistant, payload, { timeoutMs: 60_000 });
+	}
+
 	alerts() {
 		return uptionsRequest.GET<ApiResponse<AutomationAlert[]>>(
 			API_ROUTES.automations.alerts,

@@ -6,7 +6,13 @@ export const API_ROUTES = {
 	analytics: {
 		overview: route("/analytics/overview"),
 	},
+	llmProviders: {
+		connection: (provider: string) =>
+			route(`/llm-providers/${encodeURIComponent(provider)}/connection`),
+		list: route("/llm-providers"),
+	},
 	automations: {
+		assistant: route("/automations/assistant"),
 		alert: (alertId: string) =>
 			route(`/automation-alerts/${encodeURIComponent(alertId)}/read`),
 		alerts: route("/automation-alerts"),

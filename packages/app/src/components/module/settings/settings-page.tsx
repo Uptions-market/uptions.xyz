@@ -1,5 +1,6 @@
 import Avatar from "boring-avatars";
 import {
+	BrainCircuit,
 	CheckCircle2,
 	CircleUserRound,
 	type LucideIcon,
@@ -24,6 +25,11 @@ import {
 	useUpdateUsername,
 	useUpdateWallet,
 } from "@/hooks/use-auth.ts";
+import {
+	useConnectLlmProvider,
+	useDisconnectLlmProvider,
+	useLlmProviders,
+} from "@/hooks/use-llm-providers.ts";
 import { cn } from "@/lib/utils.ts";
 import {
 	getProviderConfig,
@@ -35,10 +41,15 @@ import type {
 	TradingProviderOption,
 	VenueConnection,
 } from "@/packages/types/auth.types.ts";
+import {
+	llmProvider,
+	type LlmProvider,
+} from "@/packages/types/llm-provider.types.ts";
 import { getRequestErrorMessage } from "@/util/errors.ts";
 
 const settingsSection = {
 	account: "account",
+	ai: "ai",
 	profile: "profile",
 	security: "security",
 	trading: "trading",
@@ -69,6 +80,12 @@ const settingsNavigation: Array<{
 		icon: Wallet,
 		id: settingsSection.trading,
 		label: "Trading",
+	},
+	{
+		description: "Your model credentials",
+		icon: BrainCircuit,
+		id: settingsSection.ai,
+		label: "AI Providers",
 	},
 	{
 		description: "Password and access",
@@ -173,10 +190,146 @@ export function SettingsPage() {
 						{activeSection === settingsSection.security ? (
 							<PasswordSettings enabled={Boolean(user?.password_configured)} />
 						) : null}
+						{activeSection === settingsSection.ai ? (
+							<LlmProviderSettings />
+						) : null}
 					</div>
 				</div>
 			</div>
 		</DashboardLayout>
+	);
+}
+
+function LlmProviderSettings() {
+	const { error, isLoading, providers } = useLlmProviders();
+	const connectProvider = useConnectLlmProvider();
+	const disconnectProvider = useDisconnectLlmProvider();
+	const [keys, setKeys] = useState<Partial<Record<LlmProvider, string>>>({});
+
+	const handleConnect = async (provider: LlmProvider) => {
+		const apiKey = keys[provider]?.trim();
+
+		if (!apiKey) {
+			toast.error("Enter an API key");
+			return;
+		}
+
+		try {
+			await connectProvider.mutateAsync({
+				payload: { api_key: apiKey },
+				provider,
+			});
+			setKeys((current) => ({ ...current, [provider]: "" }));
+			toast.success("AI provider connected");
+		} catch (error) {
+			toast.error(getRequestErrorMessage(error, "Unable to connect provider"));
+		}
+	};
+
+	const handleDisconnect = async (provider: LlmProvider) => {
+		try {
+			await disconnectProvider.mutateAsync(provider);
+			toast.success("AI provider disconnected");
+		} catch (error) {
+			toast.error(getRequestErrorMessage(error, "Unable to disconnect provider"));
+		}
+	};
+
+	return (
+		<SettingsSection
+			description="Connect your own model account. Credentials are encrypted and used only for your AI Builder requests."
+			icon={BrainCircuit}
+			title="AI providers"
+		>
+			{isLoading ? (
+				<div className="h-40 animate-pulse bg-app-muted" />
+			) : error ? (
+				<p className="border border-danger/40 bg-danger/10 p-4 text-sm font-semibold text-danger">
+					{error}
+				</p>
+			) : (
+				<div className="grid gap-4">
+					{providers.map((provider) => {
+						const consoleUrl =
+							provider.provider === llmProvider.chatGpt
+								? "https://platform.openai.com/api-keys"
+								: "https://console.x.ai";
+
+						return (
+							<div
+								className="border border-app-border bg-app-muted p-5"
+								key={provider.provider}
+							>
+								<div className="flex flex-wrap items-start justify-between gap-3">
+									<div>
+										<div className="flex items-center gap-2">
+											<p className="font-bold text-app-fg">{provider.label}</p>
+											<span
+												className={cn(
+													"text-xs font-bold uppercase tracking-[0.1em]",
+													provider.connected ? "text-success" : "text-app-muted-fg",
+												)}
+											>
+												{provider.connected ? "Connected" : "Not connected"}
+											</span>
+										</div>
+										<p className="mt-2 text-sm text-app-muted-fg">
+											{provider.connected
+												? `Saved key ${provider.key_hint}`
+												: "Use an API key from your provider account."}
+										</p>
+									</div>
+									<a
+										className="text-xs font-semibold text-primary hover:underline"
+										href={consoleUrl}
+										rel="noreferrer"
+										target="_blank"
+									>
+										Get API key
+									</a>
+								</div>
+								<div className="mt-5 flex flex-col gap-3 sm:flex-row">
+									<input
+										autoComplete="off"
+										className="h-11 min-w-0 flex-1 border border-app-border bg-app-card px-3 text-sm text-app-fg outline-none focus:border-primary"
+										onChange={(event) =>
+											setKeys((current) => ({
+												...current,
+												[provider.provider]: event.target.value,
+											}))
+										}
+										placeholder={provider.connected ? "Enter a replacement key" : "API key"}
+										type="password"
+										value={keys[provider.provider] ?? ""}
+									/>
+									<Button
+										disabled={connectProvider.isPending || !keys[provider.provider]?.trim()}
+										onClick={() => handleConnect(provider.provider)}
+										type="button"
+									>
+										{connectProvider.isPending
+											? "Verifying..."
+											: provider.connected
+												? "Replace key"
+												: "Connect"}
+									</Button>
+									{provider.connected ? (
+										<Button
+											disabled={disconnectProvider.isPending}
+											onClick={() => handleDisconnect(provider.provider)}
+											type="button"
+											variant="outline"
+										>
+											Disconnect
+										</Button>
+									) : null}
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			)}
+		</SettingsSection>
 	);
 }
 
